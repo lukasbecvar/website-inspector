@@ -60,12 +60,12 @@ public class CatchAllDetector {
             }
         }
 
-        Logger.log(type + " catch-all detected. Server responds with " + firstCode + " to all random requests.");
+        Logger.logStatus(type + " catch-all detected. Server responds with " + firstCode + " to all random requests.");
         return true;
     }
 
     public static boolean isPathCatchAllActive(String baseUrl) {
-        Logger.log("Running path catch-all detection...");
+        Logger.logStatus("Running path catch-all detection...");
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         List<Future<Integer>> futures = new ArrayList<>();
 
@@ -89,7 +89,7 @@ public class CatchAllDetector {
     }
 
     public static boolean isSubdomainCatchAllActive(String baseUrl) {
-        Logger.log("Running subdomain catch-all detection...");
+        Logger.logStatus("Running subdomain catch-all detection...");
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         List<Future<Integer>> futures = new ArrayList<>();
         String baseDomain = baseUrl.replaceAll("^(http[s]?://)", "").replaceAll("/$", "");

@@ -28,48 +28,59 @@ public class Main {
 
         final String finalUrl = validatedUrl;
 
-        List<AnalysisModule> modules = new ArrayList<>();
-        modules.add(new ServerInfo());
-        modules.add(new SiteMapInfo());
+        try {
+            // Initialize file logging
+            String domain = new java.net.URL(finalUrl).getHost();
+            Logger.initFileLogging(domain);
 
-        boolean pathCatchAll = CatchAllDetector.isPathCatchAllActive(finalUrl);
-        if (!pathCatchAll) {
-            modules.add(new DirectoryScanner());
+            List<AnalysisModule> modules = new ArrayList<>();
+            modules.add(new ServerInfo());
+            modules.add(new SiteMapInfo());
+
+            boolean pathCatchAll = CatchAllDetector.isPathCatchAllActive(finalUrl);
+            if (!pathCatchAll) {
+                modules.add(new DirectoryScanner());
+            }
+
+            boolean subdomainCatchAll = CatchAllDetector.isSubdomainCatchAllActive(finalUrl);
+            if (!subdomainCatchAll) {
+                modules.add(new SubdomainScanner());
+            }
+
+            // --- Run Analysis ---
+            Logger.logStatus("Analysis modules prepared. Starting scan...");
+            List<AnalysisResult> results = modules.stream()
+                    .map(module -> {
+                        Logger.logStatus("Running Module: " + module.getName());
+                        return module.analyze(finalUrl);
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            // --- Print Final Report ---
+            Logger.logStatus("--- FINAL ANALYSIS REPORT ---");
+
+            // Print in desired order
+            printResult(results, ServerInfo.ServerInfoResult.class);
+            printResult(results, DirectoryScanner.DirectoryScanResult.class);
+            printResult(results, SubdomainScanner.SubdomainScanResult.class);
+            printResult(results, SiteMapInfo.SiteMapInfoResult.class);
+
+            if (pathCatchAll) {
+                Logger.printWarning("Path Catch-All Detected", "Directory scan was skipped.");
+            }
+            if (subdomainCatchAll) {
+                Logger.printWarning("Subdomain Catch-All Detected", "Subdomain scan was skipped.");
+            }
+            Logger.printSpacer();
+
+        } catch (Exception e) {
+            Logger.printError("An unexpected error occurred: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            Logger.closeFileLogging();
+            System.exit(0);
         }
-
-        boolean subdomainCatchAll = CatchAllDetector.isSubdomainCatchAllActive(finalUrl);
-        if (!subdomainCatchAll) {
-            modules.add(new SubdomainScanner());
-        }
-
-        // --- Run Analysis ---
-        Logger.log("Analysis modules prepared. Starting scan...");
-        List<AnalysisResult> results = modules.stream()
-                .map(module -> {
-                    Logger.log("Running Module: " + module.getName());
-                    return module.analyze(finalUrl);
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        // --- Print Final Report ---
-        Logger.log("--- FINAL ANALYSIS REPORT ---");
-
-        // Print in desired order
-        printResult(results, ServerInfo.ServerInfoResult.class);
-        printResult(results, DirectoryScanner.DirectoryScanResult.class);
-        printResult(results, SubdomainScanner.SubdomainScanResult.class);
-        printResult(results, SiteMapInfo.SiteMapInfoResult.class);
-
-        if (pathCatchAll) {
-            Logger.printWarning("Path Catch-All Detected", "Directory scan was skipped.");
-        }
-        if (subdomainCatchAll) {
-            Logger.printWarning("Subdomain Catch-All Detected", "Subdomain scan was skipped.");
-        }
-        Logger.printSpacer();
-
-        System.exit(0);
     }
 
     private static void printResult(List<AnalysisResult> results, Class<?> resultType) {
