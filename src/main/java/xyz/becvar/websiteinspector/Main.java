@@ -12,7 +12,7 @@ import xyz.becvar.websiteinspector.modules.SubdomainScanner;
 public class Main
 {
     // define global variables
-    public static final int SCANNER_THREAD_POOL_SIZE = 128;
+    public static final int SCANNER_THREAD_POOL_SIZE = 30;
     public static final int CONNECTION_TIMEOUT = 3;
     public static final String APP_PREFIX = "WI";
     public static final String USER_AGENT = "website-inspector (becvar.xyz)";
@@ -44,6 +44,7 @@ public class Main
         // scan routes and wait for completion
         List<Future<?>> directoryFutures = DirectoryScanner.scanRoutes(url);
         Validator.waitForCompletion(directoryFutures);
+        Logger.clearProgress(); // Clear progress after directory scan
 
         // scan subdomains
         Logger.printSpacer();
@@ -53,6 +54,7 @@ public class Main
         // scan subdomains and wait for completion
         List<Future<?>> subdomainFutures = SubdomainScanner.scanSubdomains(url);
         Validator.waitForCompletion(subdomainFutures);
+        Logger.clearProgress(); // Clear progress after subdomain scan
 
         // print server info title header
         Logger.printSpacer();

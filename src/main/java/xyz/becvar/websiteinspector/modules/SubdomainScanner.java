@@ -20,6 +20,8 @@ public class SubdomainScanner
 {
     private static final int THREAD_POOL_SIZE = Main.SCANNER_THREAD_POOL_SIZE;
     private static Set<String> foundSubdomains = new HashSet<>();
+    private static int totalSubdomains = 0;
+    private static int completedSubdomains = 0;
 
     public static List<Future<?>> scanSubdomains(String baseUrl)
     {
@@ -35,14 +37,19 @@ public class SubdomainScanner
         try (InputStream inputStream = Main.class.getResourceAsStream("/subdomains.txt");
              BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
 
+            List<String> subdomains = new ArrayList<>();
             String subdomain;
             while ((subdomain = br.readLine()) != null) {
                 if (subdomain.trim().isEmpty()) {
                     continue;
                 }
+                subdomains.add(subdomain);
+            }
+            totalSubdomains = subdomains.size() * 2; // *2 because we check both http and https
 
-                String httpUrl = "http://" + subdomain + "." + baseDomain;
-                String httpsUrl = "https://" + subdomain + "." + baseDomain;
+            for (String s : subdomains) {
+                String httpUrl = "http://" + s + "." + baseDomain;
+                String httpsUrl = "https://" + s + "." + baseDomain;
 
                 futures.add(executor.submit(() -> checkUrl(httpUrl)));
                 futures.add(executor.submit(() -> checkUrl(httpsUrl)));
@@ -51,6 +58,8 @@ public class SubdomainScanner
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        executor.shutdown();
 
         return futures;
     }
@@ -65,6 +74,13 @@ public class SubdomainScanner
             connection.setRequestProperty("User-Agent", Main.USER_AGENT);
 
             int responseCode = connection.getResponseCode();
+            Thread.sleep(50); // Introduce a small delay
+
+            synchronized (SubdomainScanner.class) {
+                completedSubdomains++;
+                Logger.printProgress("Scanning subdomains: " + completedSubdomains + "/" + totalSubdomains + " (" + String.format("%.2f", (double) completedSubdomains / totalSubdomains * 100) + "%)");
+            }
+
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 synchronized (foundSubdomains) {
                     foundSubdomains.add(urlString);
@@ -75,12 +91,18 @@ public class SubdomainScanner
             }
 
         } catch (IOException e) {
+            synchronized (SubdomainScanner.class) {
+                completedSubdomains++;
+                Logger.printProgress("Scanning subdomains: " + completedSubdomains + "/" + totalSubdomains + " (" + String.format("%.2f", (double) completedSubdomains / totalSubdomains * 100) + "%)");
+            }
             if (e instanceof java.net.UnknownHostException) {
                 Logger.log("Subdomain does not exist: " + urlString);
             } else {
-                Logger.log("Error checking subdomain: " + urlString);
-                e.printStackTrace();
+                Logger.log("Error checking subdomain: " + urlString + " -> " + e.getMessage());
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Logger.log("Thread interrupted: " + urlString);
         }
     }
 

@@ -26,23 +26,53 @@ public class Logger
         System.out.print(Prefix + msg + ": " + ANSI_RESET);
     }
 
+    private static String lastProgressMessage = "";
+
     public static void log(String msg)
     {
+        // Clear the current progress line before printing a new log message
+        System.out.print("\r\u001B[K"); // \u001B[K clears from cursor to end of line
         System.out.println(Prefix + msg);
+        // Re-print the last progress message to keep it on the last line
+        System.out.print(lastProgressMessage);
     }
 
     public static void rawLog(String msg)
     {
+        // Clear the current progress line before printing a new log message
+        System.out.print("\r\u001B[K");
         System.out.println(ANSI_GREEN + msg);
+        // Re-print the last progress message
+        System.out.print(lastProgressMessage);
     }
 
     public static void printColoredKeyValue(String key, String value)
     {
+        // Clear the current progress line before printing a new log message
+        System.out.print("\r\u001B[K");
         System.out.println(ANSI_YELLOW + key + ANSI_RESET + ": " + ANSI_GREEN + value + ANSI_RESET);
+        // Re-print the last progress message
+        System.out.print(lastProgressMessage);
     }
 
     public static void error(String msg)
     {
+        // Clear the current progress line before printing a new log message
+        System.out.print("\r\u001B[K");
         System.out.println(Prefix + ANSI_RED + msg);
+        // Re-print the last progress message
+        System.out.print(lastProgressMessage);
+    }
+
+    public static void printProgress(String msg)
+    {
+        lastProgressMessage = "\r" + Prefix + msg;
+        System.out.print(lastProgressMessage);
+    }
+
+    public static void clearProgress()
+    {
+        System.out.print("\r\u001B[K"); // Clear the last progress line
+        lastProgressMessage = ""; // Reset the stored message
     }
 }
