@@ -6,6 +6,7 @@ import xyz.becvar.websiteinspector.modules.*;
 import xyz.becvar.websiteinspector.utils.Logger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
@@ -18,7 +19,12 @@ public class Main {
     public static final String USER_AGENT = "website-inspector (becvar.xyz)";
 
     public static void main(String[] args) {
-        String initialUrl = getUrl(args);
+
+        List<String> argsList = new ArrayList<>(Arrays.asList(args));
+        final boolean isFileLoggingEnabled = !argsList.contains("--no-file-log");
+        argsList.remove("--no-file-log");
+
+        String initialUrl = getUrl(argsList.toArray(new String[0]));
         String validatedUrl = Validator.validateUrl(initialUrl);
 
         if (validatedUrl == null) {
@@ -29,9 +35,11 @@ public class Main {
         final String finalUrl = validatedUrl;
 
         try {
-            // Initialize file logging
-            String domain = new java.net.URL(finalUrl).getHost();
-            Logger.initFileLogging(domain);
+            // Initialize file logging if enabled
+            if (isFileLoggingEnabled) {
+                String domain = new java.net.URL(finalUrl).getHost();
+                Logger.initFileLogging(domain);
+            }
 
             List<AnalysisModule> modules = new ArrayList<>();
             modules.add(new ServerInfo());
