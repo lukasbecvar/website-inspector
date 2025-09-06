@@ -1,13 +1,15 @@
 package xyz.becvar.websiteinspector;
 
+import xyz.becvar.websiteinspector.modules.CatchAllDetector;
+import xyz.becvar.websiteinspector.modules.DirectoryScanner;
+import xyz.becvar.websiteinspector.modules.ServerInfo;
+import xyz.becvar.websiteinspector.modules.SiteMapInfo;
+import xyz.becvar.websiteinspector.modules.SubdomainScanner;
+import xyz.becvar.websiteinspector.utils.Logger;
+
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.Future;
-import xyz.becvar.websiteinspector.utils.Logger;
-import xyz.becvar.websiteinspector.modules.ServerInfo;
-import xyz.becvar.websiteinspector.modules.SiteMapInfo;
-import xyz.becvar.websiteinspector.modules.DirectoryScanner;
-import xyz.becvar.websiteinspector.modules.SubdomainScanner;
 
 public class Main
 {
@@ -36,25 +38,38 @@ public class Main
         // validate url
         url = Validator.validateUrl(url);
 
-        // scan web directories routes
+        // run catch all detectors
         Logger.printSpacer();
-        Logger.log("Directory Scan");
-        Logger.printSpacer();
+        boolean pathCatchAll = CatchAllDetector.isPathCatchAllActive(url);
+        boolean subdomainCatchAll = CatchAllDetector.isSubdomainCatchAllActive(url);
 
-        // scan routes and wait for completion
-        List<Future<?>> directoryFutures = DirectoryScanner.scanRoutes(url);
-        Validator.waitForCompletion(directoryFutures);
-        Logger.clearProgress(); // Clear progress after directory scan
+        if (!pathCatchAll) {
+            // scan web directories routes
+            Logger.printSpacer();
+            Logger.log("Directory Scan");
+            Logger.printSpacer();
 
-        // scan subdomains
-        Logger.printSpacer();
-        Logger.log("Subdomain Scan");
-        Logger.printSpacer();
+            // scan routes and wait for completion
+            List<Future<?>> directoryFutures = DirectoryScanner.scanRoutes(url);
+            Validator.waitForCompletion(directoryFutures);
+            Logger.clearProgress(); // Clear progress after directory scan
+        } else {
+            Logger.log("Skipping directory scan due to catch-all detection.");
+        }
 
-        // scan subdomains and wait for completion
-        List<Future<?>> subdomainFutures = SubdomainScanner.scanSubdomains(url);
-        Validator.waitForCompletion(subdomainFutures);
-        Logger.clearProgress(); // Clear progress after subdomain scan
+        if (!subdomainCatchAll) {
+            // scan subdomains
+            Logger.printSpacer();
+            Logger.log("Subdomain Scan");
+            Logger.printSpacer();
+
+            // scan subdomains and wait for completion
+            List<Future<?>> subdomainFutures = SubdomainScanner.scanSubdomains(url);
+            Validator.waitForCompletion(subdomainFutures);
+            Logger.clearProgress(); // Clear progress after subdomain scan
+        } else {
+            Logger.log("Skipping subdomain scan due to catch-all detection.");
+        }
 
         // print server info title header
         Logger.printSpacer();
@@ -85,7 +100,13 @@ public class Main
 
         // print results
         if (DirectoryScanner.getFoundDirectories().isEmpty() && SubdomainScanner.getFoundSubdomains().isEmpty()) {
-            Logger.log("No results found.");
+            Logger.log("No direct results found.");
+            if (pathCatchAll) {
+                Logger.log("Path catch-all was detected: Server might be returning a success status for all paths.");
+            }
+            if (subdomainCatchAll) {
+                Logger.log("Subdomain catch-all (wildcard) was detected: Server might be returning a success status for all subdomains.");
+            }
             return;
         } else {
             DirectoryScanner.getFoundDirectories().forEach(Logger::log);

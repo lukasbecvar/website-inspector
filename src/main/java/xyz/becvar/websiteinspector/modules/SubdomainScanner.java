@@ -1,6 +1,7 @@
 package xyz.becvar.websiteinspector.modules;
 
 import java.net.URL;
+import java.security.SecureRandom;
 import java.util.Set;
 import java.util.List;
 import java.util.HashSet;
@@ -19,20 +20,61 @@ import xyz.becvar.websiteinspector.utils.Logger;
 public class SubdomainScanner
 {
     private static final int THREAD_POOL_SIZE = Main.SCANNER_THREAD_POOL_SIZE;
+    private static final int REDIRECT_TEST_COUNT = 5;
+    private static final String ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyz0123456789";
+    private static final SecureRandom random = new SecureRandom();
     private static Set<String> foundSubdomains = new HashSet<>();
     private static int totalSubdomains = 0;
     private static int completedSubdomains = 0;
 
-    public static List<Future<?>> scanSubdomains(String baseUrl)
-    {
-        if (!baseUrl.endsWith("/")) {
-            baseUrl += "/";
+    private static String generateRandomString(int length) {
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(ALPHANUMERIC.charAt(random.nextInt(ALPHANUMERIC.length())));
+        }
+        return sb.toString();
+    }
+
+    private static boolean detectGlobalHttpRedirect(String baseDomain) {
+        Logger.log("Checking for global HTTP -> HTTPS redirect...");
+        for (int i = 0; i < REDIRECT_TEST_COUNT; i++) {
+            String randomSub = generateRandomString(10);
+            String testUrl = "http://" + randomSub + "." + baseDomain;
+            String expectedLocation = "https://" + randomSub + "." + baseDomain;
+
+            try {
+                HttpURLConnection connection = (HttpURLConnection) new URL(testUrl).openConnection();
+                connection.setInstanceFollowRedirects(false);
+                connection.setRequestMethod("HEAD");
+                connection.setConnectTimeout(Main.CONNECTION_TIMEOUT * 1000);
+                connection.setRequestProperty("User-Agent", Main.USER_AGENT);
+
+                int responseCode = connection.getResponseCode();
+                String locationHeader = connection.getHeaderField("Location");
+
+                // If we get anything other than a 301 to the correct https location, assume no global redirect
+                if (responseCode != HttpURLConnection.HTTP_MOVED_PERM || locationHeader == null || !locationHeader.startsWith(expectedLocation)) {
+                    Logger.log("No global redirect detected.");
+                    return false;
+                }
+            } catch (IOException e) {
+                // If any request fails, we can't be sure, so assume no global redirect
+                Logger.log("No global redirect detected (request failed).");
+                return false;
+            }
         }
 
+        Logger.log("Global HTTP -> HTTPS redirect detected. Scanning HTTPS only.");
+        return true;
+    }
+
+    public static List<Future<?>> scanSubdomains(String baseUrl)
+    {
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         List<Future<?>> futures = new ArrayList<>();
-        String baseDomain = baseUrl.replaceAll("^(http[s]?://)", "");
-        baseDomain = baseDomain.replaceAll("/$", "");
+        String baseDomain = baseUrl.replaceAll("^(http[s]?://)", "").replaceAll("/$", "");
+
+        boolean httpOnly = !detectGlobalHttpRedirect(baseDomain);
 
         try (InputStream inputStream = Main.class.getResourceAsStream("/subdomains.txt");
              BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
@@ -45,13 +87,19 @@ public class SubdomainScanner
                 }
                 subdomains.add(subdomain);
             }
-            totalSubdomains = subdomains.size() * 2; // *2 because we check both http and https
+
+            if (httpOnly) {
+                totalSubdomains = subdomains.size() * 2;
+            } else {
+                totalSubdomains = subdomains.size();
+            }
 
             for (String s : subdomains) {
-                String httpUrl = "http://" + s + "." + baseDomain;
+                if (httpOnly) {
+                    String httpUrl = "http://" + s + "." + baseDomain;
+                    futures.add(executor.submit(() -> checkUrl(httpUrl)));
+                }
                 String httpsUrl = "https://" + s + "." + baseDomain;
-
-                futures.add(executor.submit(() -> checkUrl(httpUrl)));
                 futures.add(executor.submit(() -> checkUrl(httpsUrl)));
             }
 
@@ -81,7 +129,7 @@ public class SubdomainScanner
                 Logger.printProgress("Scanning subdomains: " + completedSubdomains + "/" + totalSubdomains + " (" + String.format("%.2f", (double) completedSubdomains / totalSubdomains * 100) + "%)");
             }
 
-            if (responseCode == HttpURLConnection.HTTP_OK) {
+            if (responseCode >= 200 && responseCode < 400) {
                 synchronized (foundSubdomains) {
                     foundSubdomains.add(urlString);
                 }

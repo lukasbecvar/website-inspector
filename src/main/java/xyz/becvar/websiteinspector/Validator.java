@@ -20,7 +20,7 @@ public class Validator
             connection.setRequestProperty("User-Agent", Main.USER_AGENT);
 
             int responseCode = connection.getResponseCode();
-            return (responseCode >= 200 && responseCode < 400);
+            return (responseCode >= 200 && responseCode < 300);
         } catch (Exception e) {
             return false;
         }

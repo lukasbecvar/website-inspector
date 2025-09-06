@@ -73,7 +73,7 @@ public class DirectoryScanner
                 Logger.printProgress("Scanning directories: " + completedRoutes + "/" + totalRoutes + " (" + String.format("%.2f", (double) completedRoutes / totalRoutes * 100) + "%)");
             }
 
-            if (responseCode == HttpURLConnection.HTTP_OK) {
+            if (responseCode >= 200 && responseCode < 400) {
                 synchronized (foundDirectories) {
                     foundDirectories.add(urlString);
                 }
