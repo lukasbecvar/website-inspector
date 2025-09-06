@@ -1,165 +1,125 @@
 package xyz.becvar.websiteinspector.modules;
 
-import java.net.*;
-import java.util.Map;
-import java.util.List;
-import java.io.IOException;
 import javax.net.ssl.HttpsURLConnection;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import xyz.becvar.websiteinspector.Main;
 import xyz.becvar.websiteinspector.utils.Logger;
 import xyz.becvar.websiteinspector.utils.WebsiteUtils;
 
-public class ServerInfo
-{
-    public static String[] getServerInfo(String urlString)
-    {
-        String[] serverInfo = new String[3];
+public class ServerInfo {
 
+    // Set of security headers to check for
+    private static final Set<String> SECURITY_HEADERS = new HashSet<>(Arrays.asList(
+            "strict-transport-security",
+            "content-security-policy",
+            "x-frame-options",
+            "x-content-type-options",
+            "referrer-policy",
+            "permissions-policy"
+    ));
+
+    public static void printServerInfo(String url) {
         try {
-            URL url = new URL(urlString);
-
-            InetAddress address = InetAddress.getByName(url.getHost());
-            String ip = address.getHostAddress();
-            serverInfo[0] = "Server IP Address: " + ip;
-
-            HttpURLConnection connection;
-            if (url.getProtocol().equalsIgnoreCase("https")) {
-                connection = (HttpsURLConnection) url.openConnection();
-            } else {
-                connection = (HttpURLConnection) url.openConnection();
-            }
-
+            URL urlObject = new URL(url);
+            HttpURLConnection connection = (HttpURLConnection) urlObject.openConnection();
             connection.setRequestMethod("HEAD");
             connection.setRequestProperty("User-Agent", Main.USER_AGENT);
             connection.connect();
 
+            // Basic Info
+            InetAddress address = InetAddress.getByName(urlObject.getHost());
+            Logger.printColoredKeyValue("Server IP Address", address.getHostAddress());
+            Logger.printColoredKeyValue("Server Type", connection.getHeaderField("Server"));
+            Logger.printColoredKeyValue("CMS", detectCms(url));
+            Logger.printColoredKeyValue("Protocol", urlObject.getProtocol().toUpperCase());
+
             Map<String, List<String>> headers = connection.getHeaderFields();
-            StringBuilder headersInfo = new StringBuilder();
+
+            // Cloudflare Check
+            boolean isCloudflare = headers.containsKey("CF-RAY") || 
+                                   (headers.containsKey("Server") && headers.get("Server").stream().anyMatch(h -> h.contains("cloudflare")));
+            Logger.printColoredKeyValue("Cloudflare", isCloudflare ? "Yes" : "No");
+
+            // --- Header Analysis ---
+            Logger.printSpacer();
+            Logger.log("HTTP Header Analysis");
+            Logger.printSpacer();
+
+            // Status
+            Logger.printColoredKeyValue("Status", headers.get(null).get(0));
+
+            // Analyze Security Headers
+            Set<String> foundHeaders = new HashSet<>();
             for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-                String key = entry.getKey() != null ? entry.getKey() : "Status";
-                String value = String.join(", ", entry.getValue());
-                headersInfo.append(key).append(": ").append(value).append("\n");
+                String key = entry.getKey();
+                if (key != null) {
+                    foundHeaders.add(key.toLowerCase());
+                    if (SECURITY_HEADERS.contains(key.toLowerCase())) {
+                        Logger.printSuccess(key, String.join(", ", entry.getValue()));
+                    }
+                }
             }
-            serverInfo[2] = headersInfo.toString();
 
-            String serverType = connection.getHeaderField("Server");
-            serverInfo[1] = "Server Type: " + serverType;
-
-        } catch (MalformedURLException e) {
-            serverInfo[0] = "Invalid URL format: " + e.getMessage();
-        } catch (UnknownHostException e) {
-            serverInfo[0] = "Unable to resolve host: " + e.getMessage();
-        } catch (IOException e) {
-            serverInfo[0] = "IOException: " + e.getMessage();
-        }
-
-        return serverInfo;
-    }
-
-    public static boolean isUsingCloudflare(String urlString)
-    {
-        try {
-            URL url = new URL(urlString);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("HEAD");
-            conn.setRequestProperty("User-Agent", Main.USER_AGENT);
-            conn.connect();
-
-            Map<String, List<String>> headers = conn.getHeaderFields();
-
-            if (headers.containsKey("Server") && headers.get("Server").contains("cloudflare")) {
-                return true;
+            // Report missing security headers
+            for (String missingHeader : SECURITY_HEADERS) {
+                if (!foundHeaders.contains(missingHeader)) {
+                    Logger.printWarning(capitalizeHeader(missingHeader), "Missing");
+                }
             }
-            if (headers.containsKey("CF-RAY")) {
-                return true;
+
+            // Check for X-Powered-By
+            if (foundHeaders.contains("x-powered-by")) {
+                Logger.printWarning("X-Powered-By", String.join(", ", headers.get("X-Powered-By")) + " (Reveals technology, recommended to remove)");
             }
-            if (headers.containsKey("CF-Cache-Status")) {
-                return true;
+
+            // Print other non-security headers
+            Logger.printSpacer();
+            Logger.log("Other Headers");
+            Logger.printSpacer();
+            for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+                String key = entry.getKey();
+                if (key != null && !SECURITY_HEADERS.contains(key.toLowerCase()) && !key.equalsIgnoreCase("x-powered-by") && !key.equalsIgnoreCase("Status")) {
+                    Logger.printColoredKeyValue(key, String.join(", ", entry.getValue()));
+                }
             }
 
         } catch (IOException e) {
-            e.fillInStackTrace();
+            Logger.printError("Error fetching server info: " + e.getMessage());
         }
-
-        return false;
     }
 
-    public static String detectCms(String url)
-    {
+    private static String capitalizeHeader(String header) {
+        String[] parts = header.split("-");
+        StringBuilder capitalized = new StringBuilder();
+        for (String part : parts) {
+            capitalized.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1)).append("-");
+        }
+        return capitalized.substring(0, capitalized.length() - 1);
+    }
+
+    public static String detectCms(String url) {
         String html = WebsiteUtils.getHtml(url);
+        if (html == null || html.isEmpty()) return "Unknown";
 
-        if (html.contains("WordPress")) {
-            return "WordPress";
-        }
-        if (html.contains("Joomla")) {
-            return "Joomla";
-        }
-        if (html.contains("Drupal")) {
-            return "Drupal";
-        }
-        if (html.contains("Magento")) {
-            return "Magento";
-        }
-        if (html.contains("TYPO3")) {
-            return "Typo3";
-        }
-        if (html.contains("PrestaShop")) {
-            return "PrestaShop";
-        }
-        if (html.contains("concrete5")) {
-            return "Concrete5";
-        }
-        if (html.contains("Ghost-Admin")) {
-            return "Ghost";
-        }
-        if (html.contains("Umbraco")) {
-            return "Umbraco";
-        }
-        if (html.contains("MODX")) {
-            return "MODX";
-        }
-        if (html.contains("Shopify")) {
-            return "Shopify";
-        }
-        if (html.contains("Squarespace")) {
-            return "Squarespace";
-        }
-        if (html.contains("X-Wix-Meta-Site")) {
-            return "Wix";
-        }
+        if (html.contains("wp-content") || html.contains("WordPress")) return "WordPress";
+        if (html.contains("Joomla")) return "Joomla";
+        if (html.contains("Drupal")) return "Drupal";
+        if (html.contains("Magento")) return "Magento";
+        if (html.contains("TYPO3")) return "Typo3";
+        if (html.contains("PrestaShop")) return "PrestaShop";
+        if (html.contains("Shopify")) return "Shopify";
+        if (html.contains("Squarespace")) return "Squarespace";
+        if (html.contains("X-Wix-Meta-Site")) return "Wix";
 
-        return "Unknown or unsupported CMS";
-    }
-
-    public static void printServerInfo(String url)
-    {
-        // get server info
-        String[] serverDetails = ServerInfo.getServerInfo(url);
-
-        // print the default server info
-        Logger.printColoredKeyValue("Server IP Address", serverDetails[0].split(": ")[1]);
-        Logger.printColoredKeyValue("Server Type", serverDetails[1].split(": ")[1]);
-        Logger.printColoredKeyValue("CMS", detectCms(url));
-
-        // check if website is using https
-        if (url.contains("https://")) {
-            Logger.printColoredKeyValue("Protocol", "HTTPS");
-        } else {
-            Logger.printColoredKeyValue("Protocol", "HTTP");
-        }
-
-        // check if website is using cloudflare
-        if (ServerInfo.isUsingCloudflare(url)) {
-            Logger.printColoredKeyValue("Cloudflare", "Yes");
-        }
-
-        // print the server headers formatted with colors
-        String[] headers = serverDetails[2].split("\n");
-        for (String header : headers) {
-            if (header.contains(": ")) {
-                String[] parts = header.split(": ", 2);
-                Logger.printColoredKeyValue(parts[0], parts[1]);
-            }
-        }
+        return "Unknown";
     }
 }

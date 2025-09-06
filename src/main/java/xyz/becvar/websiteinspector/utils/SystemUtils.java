@@ -4,7 +4,7 @@ public class SystemUtils
 {
     public static void shutdown(String msg)
     {
-        Logger.error(msg);
+        Logger.printError(msg);
         System.exit(0);
     }
 }
