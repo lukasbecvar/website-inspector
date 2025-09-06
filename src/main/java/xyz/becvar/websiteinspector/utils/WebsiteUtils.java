@@ -22,9 +22,8 @@ public class WebsiteUtils
     {
         StringBuilder result = new StringBuilder();
         try {
-            URL url = new URL(urlString);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("User-Agent", Main.USER_AGENT);
+            HttpURLConnection conn = HttpClientManager.getConnection(urlString);
+            conn.setRequestMethod("GET");
 
             BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             String inputLine;
@@ -33,8 +32,8 @@ public class WebsiteUtils
             }
             in.close();
         } catch (Exception e) {
-            SystemUtils.shutdown("Error while getting HTML content from URL: " + urlString);
-            return "";
+            // Return null on any error, let the caller handle it
+            return null;
         }
         return result.toString();
     }
@@ -50,10 +49,8 @@ public class WebsiteUtils
     {
         StringBuilder content = new StringBuilder();
         try {
-            URL url = new URL(urlString);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpURLConnection conn = HttpClientManager.getConnection(urlString);
             conn.setRequestMethod("GET");
-            conn.setRequestProperty("User-Agent", Main.USER_AGENT);
 
             BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             String inputLine;

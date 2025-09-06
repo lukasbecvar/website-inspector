@@ -27,7 +27,7 @@ public class ServerInfo implements AnalysisModule {
      * 
      * @param targetUrl The URL to analyze
      * 
-     * @return An AnalysisResult object containing the findings
+     * @return An AnalysisResult object containing the findings, or null on critical error
      */
     @Override
     public AnalysisResult analyze(String targetUrl) {
@@ -137,6 +137,17 @@ public class ServerInfo implements AnalysisModule {
 
             if (foundHeaders.contains("x-powered-by")) {
                 Logger.printWarning("X-Powered-By", String.join(", ", headers.get("X-Powered-By")) + " (Reveals technology, recommended to remove)");
+            }
+
+            // Print other non-security headers
+            Logger.printSpacer();
+            Logger.log("Other Headers");
+            Logger.printSpacer();
+            for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+                String key = entry.getKey();
+                if (key != null && !SECURITY_HEADERS.contains(key.toLowerCase()) && !key.equalsIgnoreCase("x-powered-by") && !key.equalsIgnoreCase("Status")) {
+                    Logger.printColoredKeyValue(key, String.join(", ", entry.getValue()));
+                }
             }
         }
 

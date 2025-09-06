@@ -3,9 +3,9 @@ package xyz.becvar.websiteinspector.modules;
 import java.util.Set;
 import java.util.List;
 import java.util.HashSet;
-import java.util.ArrayList;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -13,8 +13,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import xyz.becvar.websiteinspector.utils.Logger;
-import xyz.becvar.websiteinspector.core.AnalysisResult;
+import java.util.concurrent.atomic.AtomicInteger;
 import xyz.becvar.websiteinspector.core.AnalysisModule;
+import xyz.becvar.websiteinspector.core.AnalysisResult;
 import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
 /**
@@ -53,7 +54,7 @@ public class DirectoryScanner implements AnalysisModule {
                 routes.add(route);
             }
             final int totalRoutes = routes.size();
-            final int[] completedRoutes = {0};
+            final AtomicInteger completedRoutes = new AtomicInteger(0);
 
             for (String r : routes) {
                 String fullUrl = targetUrl + r;
@@ -75,14 +76,14 @@ public class DirectoryScanner implements AnalysisModule {
     }
 
     /**
-     * Checks the given URL for a directory listing
+     * Checks the given URL for a directory
      * 
      * @param urlString The URL to check
      * @param foundDirectories The set of found directories
-     * @param total The total number of routes to check
-     * @param completed The array of completed routes
+     * @param total The total number of directories to check
+     * @param completed The atomic integer of completed directories
      */
-    private void checkUrl(String urlString, Set<String> foundDirectories, int total, int[] completed) {
+    private void checkUrl(String urlString, Set<String> foundDirectories, int total, AtomicInteger completed) {
         try {
             HttpURLConnection connection = HttpClientManager.getConnection(urlString);
             connection.setRequestMethod("GET");
@@ -94,10 +95,8 @@ public class DirectoryScanner implements AnalysisModule {
         } catch (IOException e) {
             // Ignore connection errors
         } finally {
-            synchronized (completed) {
-                completed[0]++;
-                Logger.printProgress("Scanning directories: " + completed[0] + "/" + total);
-            }
+            int current = completed.incrementAndGet();
+            Logger.printProgress("Scanning directories: " + current + "/" + total);
         }
     }
 

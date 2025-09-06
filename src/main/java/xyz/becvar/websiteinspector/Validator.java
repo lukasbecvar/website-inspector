@@ -1,10 +1,9 @@
 package xyz.becvar.websiteinspector;
 
 import java.net.URL;
-import java.util.List;
 import java.net.HttpURLConnection;
-import java.util.concurrent.Future;
 import xyz.becvar.websiteinspector.utils.SystemUtils;
+import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
 /**
  * This class contains utility methods for validating URLs
@@ -21,13 +20,8 @@ public class Validator
     public static boolean checkIsWebsiteAvailable(String url)
     {
         try {
-            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            HttpURLConnection connection = HttpClientManager.getConnection(url);
             connection.setRequestMethod("HEAD");
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-
-            // set custom user agent
-            connection.setRequestProperty("User-Agent", Main.USER_AGENT);
 
             int responseCode = connection.getResponseCode();
             return (responseCode >= 200 && responseCode < 300);
@@ -47,10 +41,6 @@ public class Validator
     {
         String httpsUrl;
         String httpUrl;
-
-        if (url == null || url.trim().isEmpty()) {
-            SystemUtils.shutdown("URL is null or empty.");
-        }
 
         if (url == null || url.trim().isEmpty()) {
             SystemUtils.shutdown("URL is null or empty.");
@@ -85,21 +75,6 @@ public class Validator
         } else {
             SystemUtils.shutdown("Website is not available.");
             return null;
-        }
-    }
-
-    /**
-     * Waits for the completion of the given futures
-     * 
-     * @param futures The futures to wait for
-     */
-    public static void waitForCompletion(List<Future<?>> futures) {
-        for (Future<?> future : futures) {
-            try {
-                future.get();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
         }
     }
 }
