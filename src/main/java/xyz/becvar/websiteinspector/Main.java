@@ -1,122 +1,90 @@
 package xyz.becvar.websiteinspector;
 
-import xyz.becvar.websiteinspector.modules.CatchAllDetector;
-import xyz.becvar.websiteinspector.modules.DirectoryScanner;
-import xyz.becvar.websiteinspector.modules.ServerInfo;
-import xyz.becvar.websiteinspector.modules.SiteMapInfo;
-import xyz.becvar.websiteinspector.modules.SubdomainScanner;
+import xyz.becvar.websiteinspector.core.AnalysisModule;
+import xyz.becvar.websiteinspector.core.AnalysisResult;
+import xyz.becvar.websiteinspector.modules.*;
 import xyz.becvar.websiteinspector.utils.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
-import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
-public class Main
-{
-    // define global variables
+public class Main {
     public static final int SCANNER_THREAD_POOL_SIZE = 30;
     public static final int CONNECTION_TIMEOUT = 3;
     public static final String APP_PREFIX = "WI";
     public static final String USER_AGENT = "website-inspector (becvar.xyz)";
 
-    public static void main(String[] args)
-    {
-        String url = null;
+    public static void main(String[] args) {
+        String initialUrl = getUrl(args);
+        String validatedUrl = Validator.validateUrl(initialUrl);
 
-        // init scanner instance
-        Scanner scanner = new Scanner(System.in);
-
-        if (args.length > 0) {
-            url = args[0];
-        } else {
-            Logger.prompt("Enter URL");
-
-            // get url from user input
-            url = scanner.nextLine();
-        }
-
-        // validate url
-        url = Validator.validateUrl(url);
-
-        // run catch all detectors
-        Logger.printSpacer();
-        boolean pathCatchAll = CatchAllDetector.isPathCatchAllActive(url);
-        boolean subdomainCatchAll = CatchAllDetector.isSubdomainCatchAllActive(url);
-
-        if (!pathCatchAll) {
-            // scan web directories routes
-            Logger.printSpacer();
-            Logger.log("Directory Scan");
-            Logger.printSpacer();
-
-            // scan routes and wait for completion
-            List<Future<?>> directoryFutures = DirectoryScanner.scanRoutes(url);
-            Validator.waitForCompletion(directoryFutures);
-            Logger.clearProgress(); // Clear progress after directory scan
-        } else {
-            Logger.log("Skipping directory scan due to catch-all detection.");
-        }
-
-        if (!subdomainCatchAll) {
-            // scan subdomains
-            Logger.printSpacer();
-            Logger.log("Subdomain Scan");
-            Logger.printSpacer();
-
-            // scan subdomains and wait for completion
-            List<Future<?>> subdomainFutures = SubdomainScanner.scanSubdomains(url);
-            Validator.waitForCompletion(subdomainFutures);
-            Logger.clearProgress(); // Clear progress after subdomain scan
-        } else {
-            Logger.log("Skipping subdomain scan due to catch-all detection.");
-        }
-
-        // print server info title header
-        Logger.printSpacer();
-        Logger.log("Server Info");
-        Logger.printSpacer();
-
-        // print server info
-        ServerInfo.printServerInfo(url);
-
-        // print robots.txt summary
-        Logger.printSpacer();
-        Logger.log("Robots.txt Summary");
-        Logger.printSpacer();
-        String robotsSummary = SiteMapInfo.getRobotsTxtAnalyze(url);
-        Logger.rawLog(robotsSummary);
-
-        // print sitemap.xml summary
-        Logger.printSpacer();
-        Logger.log("Sitemap.xml Summary");
-        Logger.printSpacer();
-        String sitemapSummary = SiteMapInfo.getSitemapAnalyze(url);
-        Logger.rawLog(sitemapSummary);
-
-        // print results
-        Logger.printSpacer();
-        Logger.log("Scan Results");
-        Logger.printSpacer();
-
-        // print results
-        if (DirectoryScanner.getFoundDirectories().isEmpty() && SubdomainScanner.getFoundSubdomains().isEmpty()) {
-            Logger.log("No direct results found.");
-            if (pathCatchAll) {
-                Logger.log("Path catch-all was detected: Server might be returning a success status for all paths.");
-            }
-            if (subdomainCatchAll) {
-                Logger.log("Subdomain catch-all (wildcard) was detected: Server might be returning a success status for all subdomains.");
-            }
+        if (validatedUrl == null) {
+            Logger.printError("URL could not be validated. Exiting.");
             return;
-        } else {
-            DirectoryScanner.getFoundDirectories().forEach(Logger::log);
-            SubdomainScanner.getFoundSubdomains().forEach(Logger::log);
         }
 
-        // print ending spacer
+        final String finalUrl = validatedUrl;
+
+        List<AnalysisModule> modules = new ArrayList<>();
+        modules.add(new ServerInfo());
+        modules.add(new SiteMapInfo());
+
+        boolean pathCatchAll = CatchAllDetector.isPathCatchAllActive(finalUrl);
+        if (!pathCatchAll) {
+            modules.add(new DirectoryScanner());
+        }
+
+        boolean subdomainCatchAll = CatchAllDetector.isSubdomainCatchAllActive(finalUrl);
+        if (!subdomainCatchAll) {
+            modules.add(new SubdomainScanner());
+        }
+
+        // --- Run Analysis ---
+        Logger.log("Analysis modules prepared. Starting scan...");
+        List<AnalysisResult> results = modules.stream()
+                .map(module -> {
+                    Logger.log("Running Module: " + module.getName());
+                    return module.analyze(finalUrl);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        // --- Print Final Report ---
+        Logger.log("--- FINAL ANALYSIS REPORT ---");
+
+        // Print in desired order
+        printResult(results, ServerInfo.ServerInfoResult.class);
+        printResult(results, DirectoryScanner.DirectoryScanResult.class);
+        printResult(results, SubdomainScanner.SubdomainScanResult.class);
+        printResult(results, SiteMapInfo.SiteMapInfoResult.class);
+
+        if (pathCatchAll) {
+            Logger.printWarning("Path Catch-All Detected", "Directory scan was skipped.");
+        }
+        if (subdomainCatchAll) {
+            Logger.printWarning("Subdomain Catch-All Detected", "Subdomain scan was skipped.");
+        }
         Logger.printSpacer();
 
-        // exit app after printing results
         System.exit(0);
+    }
+
+    private static void printResult(List<AnalysisResult> results, Class<?> resultType) {
+        results.stream()
+                .filter(resultType::isInstance)
+                .findFirst()
+                .ifPresent(AnalysisResult::print);
+    }
+
+    private static String getUrl(String[] args) {
+        if (args.length > 0) {
+            return args[0];
+        }
+        Logger.prompt("Enter URL");
+        Scanner scanner = new Scanner(System.in);
+        return scanner.nextLine();
     }
 }

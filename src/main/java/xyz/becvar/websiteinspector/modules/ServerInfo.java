@@ -1,112 +1,47 @@
 package xyz.becvar.websiteinspector.modules;
 
-import javax.net.ssl.HttpsURLConnection;
+import xyz.becvar.websiteinspector.core.AnalysisModule;
+import xyz.becvar.websiteinspector.core.AnalysisResult;
+import xyz.becvar.websiteinspector.utils.HttpClientManager;
+import xyz.becvar.websiteinspector.utils.Logger;
+import xyz.becvar.websiteinspector.utils.WebsiteUtils;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
-import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import xyz.becvar.websiteinspector.Main;
-import xyz.becvar.websiteinspector.utils.Logger;
-import xyz.becvar.websiteinspector.utils.WebsiteUtils;
+import java.util.*;
 
-public class ServerInfo {
+public class ServerInfo implements AnalysisModule {
 
-    // Set of security headers to check for
-    private static final Set<String> SECURITY_HEADERS = new HashSet<>(Arrays.asList(
-            "strict-transport-security",
-            "content-security-policy",
-            "x-frame-options",
-            "x-content-type-options",
-            "referrer-policy",
-            "permissions-policy"
-    ));
+    @Override
+    public String getName() {
+        return "Server Info";
+    }
 
-    public static void printServerInfo(String url) {
+    @Override
+    public AnalysisResult analyze(String targetUrl) {
         try {
-            URL urlObject = new URL(url);
-            HttpURLConnection connection = (HttpURLConnection) urlObject.openConnection();
+            URL urlObject = new URL(targetUrl);
+            HttpURLConnection connection = HttpClientManager.getConnection(targetUrl);
             connection.setRequestMethod("HEAD");
-            connection.setRequestProperty("User-Agent", Main.USER_AGENT);
             connection.connect();
 
-            // Basic Info
-            InetAddress address = InetAddress.getByName(urlObject.getHost());
-            Logger.printColoredKeyValue("Server IP Address", address.getHostAddress());
-            Logger.printColoredKeyValue("Server Type", connection.getHeaderField("Server"));
-            Logger.printColoredKeyValue("CMS", detectCms(url));
-            Logger.printColoredKeyValue("Protocol", urlObject.getProtocol().toUpperCase());
-
+            String ipAddress = InetAddress.getByName(urlObject.getHost()).getHostAddress();
+            String serverType = connection.getHeaderField("Server");
+            String cms = detectCms(targetUrl);
+            String protocol = urlObject.getProtocol().toUpperCase();
             Map<String, List<String>> headers = connection.getHeaderFields();
 
-            // Cloudflare Check
-            boolean isCloudflare = headers.containsKey("CF-RAY") || 
-                                   (headers.containsKey("Server") && headers.get("Server").stream().anyMatch(h -> h.contains("cloudflare")));
-            Logger.printColoredKeyValue("Cloudflare", isCloudflare ? "Yes" : "No");
-
-            // --- Header Analysis ---
-            Logger.printSpacer();
-            Logger.log("HTTP Header Analysis");
-            Logger.printSpacer();
-
-            // Status
-            Logger.printColoredKeyValue("Status", headers.get(null).get(0));
-
-            // Analyze Security Headers
-            Set<String> foundHeaders = new HashSet<>();
-            for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-                String key = entry.getKey();
-                if (key != null) {
-                    foundHeaders.add(key.toLowerCase());
-                    if (SECURITY_HEADERS.contains(key.toLowerCase())) {
-                        Logger.printSuccess(key, String.join(", ", entry.getValue()));
-                    }
-                }
-            }
-
-            // Report missing security headers
-            for (String missingHeader : SECURITY_HEADERS) {
-                if (!foundHeaders.contains(missingHeader)) {
-                    Logger.printWarning(capitalizeHeader(missingHeader), "Missing");
-                }
-            }
-
-            // Check for X-Powered-By
-            if (foundHeaders.contains("x-powered-by")) {
-                Logger.printWarning("X-Powered-By", String.join(", ", headers.get("X-Powered-By")) + " (Reveals technology, recommended to remove)");
-            }
-
-            // Print other non-security headers
-            Logger.printSpacer();
-            Logger.log("Other Headers");
-            Logger.printSpacer();
-            for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-                String key = entry.getKey();
-                if (key != null && !SECURITY_HEADERS.contains(key.toLowerCase()) && !key.equalsIgnoreCase("x-powered-by") && !key.equalsIgnoreCase("Status")) {
-                    Logger.printColoredKeyValue(key, String.join(", ", entry.getValue()));
-                }
-            }
+            return new ServerInfoResult(ipAddress, serverType, cms, protocol, headers);
 
         } catch (IOException e) {
             Logger.printError("Error fetching server info: " + e.getMessage());
+            return null; // Return null or an ErrorResult object
         }
     }
 
-    private static String capitalizeHeader(String header) {
-        String[] parts = header.split("-");
-        StringBuilder capitalized = new StringBuilder();
-        for (String part : parts) {
-            capitalized.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1)).append("-");
-        }
-        return capitalized.substring(0, capitalized.length() - 1);
-    }
-
-    public static String detectCms(String url) {
+    private String detectCms(String url) {
         String html = WebsiteUtils.getHtml(url);
         if (html == null || html.isEmpty()) return "Unknown";
 
@@ -121,5 +56,77 @@ public class ServerInfo {
         if (html.contains("X-Wix-Meta-Site")) return "Wix";
 
         return "Unknown";
+    }
+
+    // Inner class for storing and printing results
+    public static class ServerInfoResult implements AnalysisResult {
+        private static final Set<String> SECURITY_HEADERS = new HashSet<>(Arrays.asList(
+                "strict-transport-security", "content-security-policy", "x-frame-options",
+                "x-content-type-options", "referrer-policy", "permissions-policy"));
+
+        private final String ipAddress;
+        private final String serverType;
+        private final String cms;
+        private final String protocol;
+        private final Map<String, List<String>> headers;
+
+        public ServerInfoResult(String ipAddress, String serverType, String cms, String protocol, Map<String, List<String>> headers) {
+            this.ipAddress = ipAddress;
+            this.serverType = serverType;
+            this.cms = cms;
+            this.protocol = protocol;
+            this.headers = headers;
+        }
+
+        @Override
+        public void print() {
+            Logger.printSpacer();
+            Logger.log("Server Info");
+            Logger.printSpacer();
+
+            Logger.printColoredKeyValue("Server IP Address", ipAddress);
+            Logger.printColoredKeyValue("Server Type", serverType);
+            Logger.printColoredKeyValue("CMS", cms);
+            Logger.printColoredKeyValue("Protocol", protocol);
+
+            boolean isCloudflare = headers.containsKey("CF-RAY") || (headers.containsKey("Server") && headers.get("Server").stream().anyMatch(h -> h.contains("cloudflare")));
+            Logger.printColoredKeyValue("Cloudflare", isCloudflare ? "Yes" : "No");
+
+            Logger.printSpacer();
+            Logger.log("HTTP Header Analysis");
+            Logger.printSpacer();
+
+            Logger.printColoredKeyValue("Status", headers.get(null).get(0));
+
+            Set<String> foundHeaders = new HashSet<>();
+            headers.keySet().stream().filter(Objects::nonNull).forEach(key -> foundHeaders.add(key.toLowerCase()));
+
+            SECURITY_HEADERS.forEach(securityHeader -> {
+                if (foundHeaders.contains(securityHeader)) {
+                    // Find the original header key to get the value, ignoring case
+                    for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+                        if (entry.getKey() != null && entry.getKey().equalsIgnoreCase(securityHeader)) {
+                            Logger.printSuccess(capitalizeHeader(securityHeader), String.join(", ", entry.getValue()));
+                            break;
+                        }
+                    }
+                } else {
+                    Logger.printWarning(capitalizeHeader(securityHeader), "Missing");
+                }
+            });
+
+            if (foundHeaders.contains("x-powered-by")) {
+                Logger.printWarning("X-Powered-By", String.join(", ", headers.get("X-Powered-By")) + " (Reveals technology, recommended to remove)");
+            }
+        }
+
+        private String capitalizeHeader(String header) {
+            String[] parts = header.split("-");
+            StringBuilder capitalized = new StringBuilder();
+            for (String part : parts) {
+                capitalized.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1)).append("-");
+            }
+            return capitalized.substring(0, capitalized.length() - 1);
+        }
     }
 }

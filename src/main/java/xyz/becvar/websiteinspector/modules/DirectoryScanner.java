@@ -1,38 +1,41 @@
 package xyz.becvar.websiteinspector.modules;
 
-import java.net.URL;
-import java.util.Set;
-import java.util.List;
-import java.util.HashSet;
-import java.io.InputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.util.concurrent.Future;
-import java.util.concurrent.Executors;
-import xyz.becvar.websiteinspector.Main;
-import java.util.concurrent.ExecutorService;
+import xyz.becvar.websiteinspector.core.AnalysisModule;
+import xyz.becvar.websiteinspector.core.AnalysisResult;
+import xyz.becvar.websiteinspector.utils.HttpClientManager;
 import xyz.becvar.websiteinspector.utils.Logger;
 
-public class DirectoryScanner
-{
-    private static final int THREAD_POOL_SIZE = Main.SCANNER_THREAD_POOL_SIZE;
-    private static Set<String> foundDirectories = new HashSet<>();
-    private static int totalRoutes = 0;
-    private static int completedRoutes = 0;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-    public static List<Future<?>>scanRoutes(String urlString)
-    {
-        if (!urlString.endsWith("/")) {
-            urlString += "/";
+public class DirectoryScanner implements AnalysisModule {
+
+    @Override
+    public String getName() {
+        return "Directory Scan";
+    }
+
+    @Override
+    public AnalysisResult analyze(String targetUrl) {
+        Set<String> foundDirectories = new HashSet<>();
+        if (!targetUrl.endsWith("/")) {
+            targetUrl += "/";
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        ExecutorService executor = Executors.newFixedThreadPool(30);
         List<Future<?>> futures = new ArrayList<>();
 
-        try (InputStream inputStream = Main.class.getResourceAsStream("/routes.txt");
+        try (InputStream inputStream = getClass().getResourceAsStream("/routes.txt");
              BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
 
             List<String> routes = new ArrayList<>();
@@ -40,62 +43,62 @@ public class DirectoryScanner
             while ((route = br.readLine()) != null) {
                 routes.add(route);
             }
-            totalRoutes = routes.size();
+            final int totalRoutes = routes.size();
+            final int[] completedRoutes = {0};
 
             for (String r : routes) {
-                String fullUrl = urlString + r;
-                futures.add(executor.submit(() -> checkUrl(fullUrl)));
+                String fullUrl = targetUrl + r;
+                futures.add(executor.submit(() -> checkUrl(fullUrl, foundDirectories, totalRoutes, completedRoutes)));
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            Logger.printError("Failed to read routes.txt: " + e.getMessage());
         }
 
         executor.shutdown();
-
-        return futures;
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (Exception e) { /* Ignore */ }
+        }
+        Logger.clearProgress();
+        return new DirectoryScanResult(foundDirectories);
     }
 
-    public static void checkUrl(String urlString)
-    {
+    private void checkUrl(String urlString, Set<String> foundDirectories, int total, int[] completed) {
         try {
-            URL url = new URL(urlString);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setConnectTimeout(Main.CONNECTION_TIMEOUT * 1000);
+            HttpURLConnection connection = HttpClientManager.getConnection(urlString);
             connection.setRequestMethod("GET");
-            connection.setRequestProperty("User-Agent", Main.USER_AGENT);
-
-            int responseCode = connection.getResponseCode();
-            Thread.sleep(50); // Introduce a small delay
-
-            synchronized (DirectoryScanner.class) {
-                completedRoutes++;
-                Logger.printProgress("Scanning directories: " + completedRoutes + "/" + totalRoutes + " (" + String.format("%.2f", (double) completedRoutes / totalRoutes * 100) + "%)");
-            }
-
-            if (responseCode >= 200 && responseCode < 400) {
+            if (connection.getResponseCode() >= 200 && connection.getResponseCode() < 400) {
                 synchronized (foundDirectories) {
                     foundDirectories.add(urlString);
                 }
-                Logger.log("Directory found: " + urlString);
-            } else {
-                Logger.log("Directory not found: " + urlString + " (Response Code: " + responseCode + ")");
             }
-
         } catch (IOException e) {
-            synchronized (DirectoryScanner.class) {
-                completedRoutes++;
-                Logger.printProgress("Scanning directories: " + completedRoutes + "/" + totalRoutes + " (" + String.format("%.2f", (double) completedRoutes / totalRoutes * 100) + "%)");
+            // Ignore connection errors
+        } finally {
+            synchronized (completed) {
+                completed[0]++;
+                Logger.printProgress("Scanning directories: " + completed[0] + "/" + total);
             }
-            Logger.log("Error checking URL: " + urlString + " -> " + e.getMessage());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            Logger.log("Thread interrupted: " + urlString);
         }
     }
 
-    public static Set<String> getFoundDirectories()
-    {
-        return foundDirectories;
+    public static class DirectoryScanResult implements AnalysisResult {
+        private final Set<String> foundDirectories;
+
+        public DirectoryScanResult(Set<String> foundDirectories) {
+            this.foundDirectories = foundDirectories;
+        }
+
+        @Override
+        public void print() {
+            if (!foundDirectories.isEmpty()) {
+                Logger.printSpacer();
+                Logger.log("Found Routes");
+                Logger.printSpacer();
+                foundDirectories.forEach(dir -> Logger.printSuccess("  - Found", dir));
+            }
+        }
     }
 }
