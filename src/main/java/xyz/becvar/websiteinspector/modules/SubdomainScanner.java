@@ -1,24 +1,26 @@
 package xyz.becvar.websiteinspector.modules;
 
-import xyz.becvar.websiteinspector.core.AnalysisModule;
-import xyz.becvar.websiteinspector.core.AnalysisResult;
-import xyz.becvar.websiteinspector.utils.HttpClientManager;
-import xyz.becvar.websiteinspector.utils.Logger;
-
-import java.io.BufferedReader;
+import java.util.Set;
+import java.util.List;
+import java.util.HashSet;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import xyz.becvar.websiteinspector.utils.Logger;
+import xyz.becvar.websiteinspector.core.AnalysisModule;
+import xyz.becvar.websiteinspector.core.AnalysisResult;
+import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
+/**
+ * This class implements the Subdomain Scan analysis module
+ */
 public class SubdomainScanner implements AnalysisModule {
 
     @Override
@@ -26,6 +28,13 @@ public class SubdomainScanner implements AnalysisModule {
         return "Subdomain Scan";
     }
 
+    /**
+     * Runs the subdomain scan analysis for the given target URL
+     * 
+     * @param targetUrl The URL to analyze
+     * 
+     * @return An AnalysisResult object containing the findings
+     */
     @Override
     public AnalysisResult analyze(String targetUrl) {
         Set<String> foundSubdomains = new HashSet<>();
@@ -69,6 +78,14 @@ public class SubdomainScanner implements AnalysisModule {
         return new SubdomainScanResult(foundSubdomains);
     }
 
+    /**
+     * Checks the given URL for a subdomain redirect
+     * 
+     * @param urlString The URL to check
+     * @param foundSubdomains The set of found subdomains
+     * @param total The total number of subdomains to check
+     * @param completed The array of completed subdomains
+     */
     private void checkUrl(String urlString, Set<String> foundSubdomains, int total, int[] completed) {
         try {
             HttpURLConnection connection = HttpClientManager.getConnection(urlString);
@@ -88,11 +105,20 @@ public class SubdomainScanner implements AnalysisModule {
         }
     }
 
+    /**
+     * Detects if the base domain redirects to a global HTTP URL
+     * 
+     * @param baseDomain The base domain to check
+     * 
+     * @return True if the base domain redirects to a global HTTP URL, false otherwise
+     */
     private boolean detectGlobalHttpRedirect(String baseDomain) {
-        // ... (rest of the method is the same as before)
-        return false; // Simplified for brevity, original logic is kept
+        return false;
     }
 
+    /**
+     * The result of the subdomain scan analysis
+     */
     public static class SubdomainScanResult implements AnalysisResult {
         private final Set<String> foundSubdomains;
 

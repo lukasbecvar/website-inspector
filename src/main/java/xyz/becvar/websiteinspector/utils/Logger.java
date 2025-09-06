@@ -1,14 +1,16 @@
 package xyz.becvar.websiteinspector.utils;
 
-import xyz.becvar.websiteinspector.Main;
-
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.BufferedWriter;
 import java.time.LocalDateTime;
+import xyz.becvar.websiteinspector.Main;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * This class handles logging to the console and file
+ */
 public class Logger {
 
     // ANSI color codes
@@ -23,6 +25,11 @@ public class Logger {
     private static String lastProgressMessage = "";
     private static BufferedWriter fileWriter = null;
 
+    /**
+     * Initializes file logging for the given domain
+     * 
+     * @param domain The domain to log for
+     */
     public static void initFileLogging(String domain) {
         try {
             File logsDir = new File("logs");
@@ -38,6 +45,9 @@ public class Logger {
         }
     }
 
+    /**
+     * Closes the file logger
+     */
     public static void closeFileLogging() {
         if (fileWriter != null) {
             try {
@@ -48,24 +58,36 @@ public class Logger {
         }
     }
 
+    /**
+     * Logs a message to the file
+     * 
+     * @param cleanMessage The message to log
+     */
     private static void logToFile(String cleanMessage) {
         if (fileWriter != null) {
             try {
                 fileWriter.write(cleanMessage + "\n");
-            } catch (IOException e) {
-                // Can't do much here, maybe log to console that file logging failed
-            }
+            } catch (IOException e) { /* Ignore */ }
         }
     }
 
+    /**
+     * Clears the console line
+     */
     private static void clearConsoleLine() {
         System.out.print("\r\u001B[K");
     }
 
+    /**
+     * Reprints the progress line
+     */
     private static void reprintProgressLine() {
         System.out.print(lastProgressMessage);
     }
 
+    /**
+     * Prints a spacer line
+     */
     public static void printSpacer() {
         String message = "========================================================================================";
         logToFile(message);
@@ -74,18 +96,31 @@ public class Logger {
         reprintProgressLine();
     }
 
+    /**
+     * Logs a status message to the console
+     * 
+     * @param msg The message to log
+     */
     public static void logStatus(String msg) {
-        // This method logs only to the console, not to the file.
         clearConsoleLine();
         System.out.println(CONSOLE_PREFIX + ": " + ANSI_CYAN + msg + ANSI_RESET);
         reprintProgressLine();
     }
 
+    /**
+     * Prompts the user for input
+     * 
+     * @param msg The message to prompt with
+     */
     public static void prompt(String msg) {
-        // This method does not log to file, it's for interactive console prompts only.
         System.out.print(CONSOLE_PREFIX + ": " + msg + ": " + ANSI_RESET);
     }
 
+    /**
+     * Logs a message to the console
+     * 
+     * @param msg The message to log
+     */
     public static void log(String msg) {
         logToFile(msg);
         clearConsoleLine();
@@ -93,6 +128,11 @@ public class Logger {
         reprintProgressLine();
     }
 
+    /**
+     * Logs a raw message to the console
+     * 
+     * @param msg The message to log
+     */
     public static void rawLog(String msg) {
         logToFile(msg);
         clearConsoleLine();
@@ -100,6 +140,12 @@ public class Logger {
         reprintProgressLine();
     }
 
+    /**
+     * Prints a key-value pair in a colored format
+     * 
+     * @param key The key to print
+     * @param value The value to print
+     */
     public static void printColoredKeyValue(String key, String value) {
         if (value == null || value.trim().isEmpty() || value.equalsIgnoreCase("null")) {
             value = "Not specified";
@@ -110,6 +156,12 @@ public class Logger {
         reprintProgressLine();
     }
 
+    /**
+     * Prints a success message in a colored format
+     * 
+     * @param key The key to print
+     * @param value The value to print
+     */
     public static void printSuccess(String key, String value) {
         logToFile(key + ": " + value);
         clearConsoleLine();
@@ -117,6 +169,12 @@ public class Logger {
         reprintProgressLine();
     }
 
+    /**
+     * Prints a warning message in a colored format
+     * 
+     * @param key The key to print
+     * @param value The value to print
+     */
     public static void printWarning(String key, String value) {
         logToFile("[!] " + key + ": " + value);
         clearConsoleLine();
@@ -124,6 +182,11 @@ public class Logger {
         reprintProgressLine();
     }
 
+    /**
+     * Prints an error message in a colored format
+     * 
+     * @param message The message to print
+     */
     public static void printError(String message) {
         logToFile("[ERROR] " + message);
         clearConsoleLine();
@@ -131,11 +194,19 @@ public class Logger {
         reprintProgressLine();
     }
 
+    /**
+     * Prints a progress message
+     * 
+     * @param msg The message to print
+     */ 
     public static void printProgress(String msg) {
         lastProgressMessage = "\r" + CONSOLE_PREFIX + ": " + msg;
         System.out.print(lastProgressMessage);
     }
 
+    /**
+     * Clears the progress message  
+     */
     public static void clearProgress() {
         clearConsoleLine();
         lastProgressMessage = "";

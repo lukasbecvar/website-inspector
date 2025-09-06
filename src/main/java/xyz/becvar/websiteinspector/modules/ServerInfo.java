@@ -1,17 +1,20 @@
+
 package xyz.becvar.websiteinspector.modules;
 
-import xyz.becvar.websiteinspector.core.AnalysisModule;
-import xyz.becvar.websiteinspector.core.AnalysisResult;
-import xyz.becvar.websiteinspector.utils.HttpClientManager;
+import java.util.*;
+import java.net.URL;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.HttpURLConnection;
 import xyz.becvar.websiteinspector.utils.Logger;
 import xyz.becvar.websiteinspector.utils.WebsiteUtils;
+import xyz.becvar.websiteinspector.core.AnalysisResult;
+import xyz.becvar.websiteinspector.core.AnalysisModule;
+import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.URL;
-import java.util.*;
-
+/**
+ * This class implements the Server Info analysis module
+ */
 public class ServerInfo implements AnalysisModule {
 
     @Override
@@ -19,6 +22,13 @@ public class ServerInfo implements AnalysisModule {
         return "Server Info";
     }
 
+    /**
+     * Runs the server info analysis for the given target URL
+     * 
+     * @param targetUrl The URL to analyze
+     * 
+     * @return An AnalysisResult object containing the findings
+     */
     @Override
     public AnalysisResult analyze(String targetUrl) {
         try {
@@ -41,10 +51,18 @@ public class ServerInfo implements AnalysisModule {
         }
     }
 
+    /**
+     * Detects the CMS (Content Management System) based on the HTML content
+     * 
+     * @param url The URL to analyze
+     * 
+     * @return The detected CMS, or "Unknown" if none is detected
+     */
     private String detectCms(String url) {
         String html = WebsiteUtils.getHtml(url);
         if (html == null || html.isEmpty()) return "Unknown";
 
+        // check for cms specific strings
         if (html.contains("wp-content") || html.contains("WordPress")) return "WordPress";
         if (html.contains("Joomla")) return "Joomla";
         if (html.contains("Drupal")) return "Drupal";
@@ -58,7 +76,9 @@ public class ServerInfo implements AnalysisModule {
         return "Unknown";
     }
 
-    // Inner class for storing and printing results
+    /**
+     * Inner class for storing and printing results
+     */
     public static class ServerInfoResult implements AnalysisResult {
         private static final Set<String> SECURITY_HEADERS = new HashSet<>(Arrays.asList(
                 "strict-transport-security", "content-security-policy", "x-frame-options",

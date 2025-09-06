@@ -1,23 +1,25 @@
 package xyz.becvar.websiteinspector.modules;
 
-import xyz.becvar.websiteinspector.core.AnalysisModule;
-import xyz.becvar.websiteinspector.core.AnalysisResult;
-import xyz.becvar.websiteinspector.utils.HttpClientManager;
-import xyz.becvar.websiteinspector.utils.Logger;
-
-import java.io.BufferedReader;
-import java.io.IOException;
+import java.util.Set;
+import java.util.List;
+import java.util.HashSet;
+import java.util.ArrayList;
 import java.io.InputStream;
+import java.io.IOException;
+import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import xyz.becvar.websiteinspector.utils.Logger;
+import xyz.becvar.websiteinspector.core.AnalysisResult;
+import xyz.becvar.websiteinspector.core.AnalysisModule;
+import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
+/**
+ * This class implements the Directory Scan analysis module
+ */
 public class DirectoryScanner implements AnalysisModule {
 
     @Override
@@ -25,6 +27,13 @@ public class DirectoryScanner implements AnalysisModule {
         return "Directory Scan";
     }
 
+    /**
+     * Runs the directory scan analysis for the given target URL
+     * 
+     * @param targetUrl The URL to analyze
+     * 
+     * @return An AnalysisResult object containing the findings
+     */
     @Override
     public AnalysisResult analyze(String targetUrl) {
         Set<String> foundDirectories = new HashSet<>();
@@ -65,6 +74,14 @@ public class DirectoryScanner implements AnalysisModule {
         return new DirectoryScanResult(foundDirectories);
     }
 
+    /**
+     * Checks the given URL for a directory listing
+     * 
+     * @param urlString The URL to check
+     * @param foundDirectories The set of found directories
+     * @param total The total number of routes to check
+     * @param completed The array of completed routes
+     */
     private void checkUrl(String urlString, Set<String> foundDirectories, int total, int[] completed) {
         try {
             HttpURLConnection connection = HttpClientManager.getConnection(urlString);
@@ -84,6 +101,9 @@ public class DirectoryScanner implements AnalysisModule {
         }
     }
 
+    /**
+     * The result of the directory scan analysis
+     */
     public static class DirectoryScanResult implements AnalysisResult {
         private final Set<String> foundDirectories;
 

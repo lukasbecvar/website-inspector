@@ -1,32 +1,42 @@
 package xyz.becvar.websiteinspector;
 
-import xyz.becvar.websiteinspector.core.AnalysisModule;
-import xyz.becvar.websiteinspector.core.AnalysisResult;
-import xyz.becvar.websiteinspector.modules.*;
-import xyz.becvar.websiteinspector.utils.Logger;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
+import xyz.becvar.websiteinspector.modules.*;
+import xyz.becvar.websiteinspector.utils.Logger;
+import xyz.becvar.websiteinspector.core.AnalysisResult;
+import xyz.becvar.websiteinspector.core.AnalysisModule;
 
+/**
+ * This is the main class of the website-inspector application
+ */
 public class Main {
+    
+    // Core configuration
     public static final int SCANNER_THREAD_POOL_SIZE = 30;
     public static final int CONNECTION_TIMEOUT = 3;
     public static final String APP_PREFIX = "WI";
     public static final String USER_AGENT = "website-inspector (becvar.xyz)";
 
+    /**
+     * The main method of the application
+     * 
+     * @param args The command-line arguments
+     */
     public static void main(String[] args) {
 
+        // Parse command-line arguments
         List<String> argsList = new ArrayList<>(Arrays.asList(args));
         final boolean isFileLoggingEnabled = !argsList.contains("--no-file-log");
         argsList.remove("--no-file-log");
 
+        // Validate URL
         String initialUrl = getUrl(argsList.toArray(new String[0]));
         String validatedUrl = Validator.validateUrl(initialUrl);
-
         if (validatedUrl == null) {
             Logger.printError("URL could not be validated. Exiting.");
             return;
@@ -45,17 +55,19 @@ public class Main {
             modules.add(new ServerInfo());
             modules.add(new SiteMapInfo());
 
+            // run directory scan module
             boolean pathCatchAll = CatchAllDetector.isPathCatchAllActive(finalUrl);
             if (!pathCatchAll) {
                 modules.add(new DirectoryScanner());
             }
 
+            // run subdomain scan module
             boolean subdomainCatchAll = CatchAllDetector.isSubdomainCatchAllActive(finalUrl);
             if (!subdomainCatchAll) {
                 modules.add(new SubdomainScanner());
             }
 
-            // --- Run Analysis ---
+            // --- Run analysis ---
             Logger.logStatus("Analysis modules prepared. Starting scan...");
             List<AnalysisResult> results = modules.stream()
                     .map(module -> {
@@ -65,7 +77,7 @@ public class Main {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
-            // --- Print Final Report ---
+            // --- Print final report ---
             Logger.logStatus("--- FINAL ANALYSIS REPORT ---");
 
             // Print in desired order
@@ -91,13 +103,23 @@ public class Main {
         }
     }
 
+    /**
+     * Prints the result of the analysis
+     * 
+     * @param results The results to print
+     * @param resultType The type of result to print
+     */
     private static void printResult(List<AnalysisResult> results, Class<?> resultType) {
-        results.stream()
-                .filter(resultType::isInstance)
-                .findFirst()
-                .ifPresent(AnalysisResult::print);
+        results.stream().filter(resultType::isInstance).findFirst().ifPresent(AnalysisResult::print);
     }
 
+    /**
+     * Gets the URL from the command-line arguments
+     * 
+     * @param args The command-line arguments
+     * 
+     * @return The URL
+     */
     private static String getUrl(String[] args) {
         if (args.length > 0) {
             return args[0];

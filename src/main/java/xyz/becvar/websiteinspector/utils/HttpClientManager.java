@@ -1,13 +1,24 @@
 package xyz.becvar.websiteinspector.utils;
 
-import xyz.becvar.websiteinspector.Main;
-
+import java.net.URL;
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import xyz.becvar.websiteinspector.Main;
 
+/**
+ * This class manages the HttpURLConnection
+ */
 public class HttpClientManager {
 
+    /**
+     * Creates a new HttpURLConnection for the given URL
+     * 
+     * @param urlString The URL to connect to
+     * 
+     * @return The HttpURLConnection
+     * 
+     * @throws IOException If an error occurs while creating the connection
+     */
     public static HttpURLConnection getConnection(String urlString) throws IOException {
         URL url = new URL(urlString);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();

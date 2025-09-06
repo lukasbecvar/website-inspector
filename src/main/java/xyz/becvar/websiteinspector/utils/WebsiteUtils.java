@@ -6,8 +6,18 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import xyz.becvar.websiteinspector.Main;
 
+/**
+ * This class contains utility methods for working with websites
+ */
 public class WebsiteUtils
 {
+    /**
+     * Gets the HTML content of the given URL
+     * 
+     * @param urlString The URL to get the HTML content from
+     * 
+     * @return The HTML content of the URL
+     */
     public static String getHtml(String urlString)
     {
         StringBuilder result = new StringBuilder();
@@ -29,6 +39,13 @@ public class WebsiteUtils
         return result.toString();
     }
 
+    /**
+     * Downloads the file content of the given URL
+     * 
+     * @param urlString The URL to download the file content from
+     * 
+     * @return The file content of the URL
+     */
     public static String downloadFileContent(String urlString)
     {
         StringBuilder content = new StringBuilder();

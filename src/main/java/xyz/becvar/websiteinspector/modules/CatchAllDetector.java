@@ -1,17 +1,19 @@
 package xyz.becvar.websiteinspector.modules;
 
+import java.net.URL;
+import java.util.List;
+import java.util.ArrayList;
+import java.security.SecureRandom;
+import java.net.HttpURLConnection;
+import java.util.concurrent.Future;
+import java.util.concurrent.Executors;
 import xyz.becvar.websiteinspector.Main;
+import java.util.concurrent.ExecutorService;
 import xyz.becvar.websiteinspector.utils.Logger;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
+/**
+ * This class contains the logic for detecting catch-alls on a website
+ */
 public class CatchAllDetector {
 
     private static final int THREAD_POOL_SIZE = Main.SCANNER_THREAD_POOL_SIZE;
@@ -20,6 +22,13 @@ public class CatchAllDetector {
     private static final String ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyz0123456789";
     private static final SecureRandom random = new SecureRandom();
 
+    /**
+     * Generates a random string of the given length
+     * 
+     * @param length The length of the string to generate
+     * 
+     * @return The generated string
+     */
     private static String generateRandomString(int length) {
         StringBuilder sb = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
@@ -28,6 +37,13 @@ public class CatchAllDetector {
         return sb.toString();
     }
 
+    /**
+     * Checks the given URL for a catch-all response code
+     * 
+     * @param urlString The URL to check
+     * 
+     * @return The response code of the URL, or -1 if an error occurred
+     */
     private static int checkUrl(String urlString) {
         try {
             HttpURLConnection connection = (HttpURLConnection) new URL(urlString).openConnection();
@@ -42,6 +58,14 @@ public class CatchAllDetector {
         }
     }
 
+    /**
+     * Analyzes the given list of response codes and determines if a catch-all response code is present
+     * 
+     * @param responseCodes The list of response codes to analyze
+     * @param type The type of catch-all to analyze (e.g. "Path" or "Subdomain")
+     * 
+     * @return True if a catch-all response code is present, false otherwise
+     */
     private static boolean analyzeCodes(List<Integer> responseCodes, String type) {
         if (responseCodes.isEmpty() || responseCodes.contains(-1) || responseCodes.get(0) == -1) {
             return false;
@@ -64,6 +88,13 @@ public class CatchAllDetector {
         return true;
     }
 
+    /**
+     * Runs the catch-all detection for the given base URL
+     * 
+     * @param baseUrl The base URL to run the detection on
+     * 
+     * @return True if the catch-all is active, false otherwise
+     */
     public static boolean isPathCatchAllActive(String baseUrl) {
         Logger.logStatus("Running path catch-all detection...");
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
@@ -88,6 +119,13 @@ public class CatchAllDetector {
         return analyzeCodes(responseCodes, "Path");
     }
 
+    /**
+     * Runs the catch-all detection for the given base URL
+     * 
+     * @param baseUrl The base URL to run the detection on
+     * 
+     * @return True if the catch-all is active, false otherwise
+     */
     public static boolean isSubdomainCatchAllActive(String baseUrl) {
         Logger.logStatus("Running subdomain catch-all detection...");
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);

@@ -6,8 +6,18 @@ import java.net.HttpURLConnection;
 import java.util.concurrent.Future;
 import xyz.becvar.websiteinspector.utils.SystemUtils;
 
+/**
+ * This class contains utility methods for validating URLs
+ */
 public class Validator
 {
+    /**
+     * Checks if the given URL is available
+     * 
+     * @param url The URL to check
+     * 
+     * @return True if the URL is available, false otherwise
+     */
     public static boolean checkIsWebsiteAvailable(String url)
     {
         try {
@@ -26,6 +36,13 @@ public class Validator
         }
     }
 
+    /**
+     * Validates the given URL
+     * 
+     * @param url The URL to validate
+     * 
+     * @return The validated URL, or null if the URL is invalid
+     */
     public static String validateUrl(String url)
     {
         String httpsUrl;
@@ -71,6 +88,11 @@ public class Validator
         }
     }
 
+    /**
+     * Waits for the completion of the given futures
+     * 
+     * @param futures The futures to wait for
+     */
     public static void waitForCompletion(List<Future<?>> futures) {
         for (Future<?> future : futures) {
             try {
