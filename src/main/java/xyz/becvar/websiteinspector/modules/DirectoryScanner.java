@@ -11,6 +11,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
+import xyz.becvar.websiteinspector.Main;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import xyz.becvar.websiteinspector.core.Config;
 import xyz.becvar.websiteinspector.utils.Logger;
@@ -46,8 +48,8 @@ public class DirectoryScanner implements AnalysisModule {
         ExecutorService executor = Executors.newFixedThreadPool(Config.SCANNER_THREAD_POOL_SIZE);
         List<Future<?>> futures = new ArrayList<>();
 
-        try (InputStream inputStream = getClass().getResourceAsStream("/routes.txt");
-             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+        try (InputStream inputStream = Main.class.getResourceAsStream("/routes.txt");
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
             List<String> routes = new ArrayList<>();
             String route;
@@ -110,7 +112,7 @@ public class DirectoryScanner implements AnalysisModule {
         private final Set<String> foundDirectories;
 
         public DirectoryScanResult(Set<String> foundDirectories) {
-            this.foundDirectories = foundDirectories;
+            this.foundDirectories = new HashSet<>(foundDirectories);
         }
 
         @Override

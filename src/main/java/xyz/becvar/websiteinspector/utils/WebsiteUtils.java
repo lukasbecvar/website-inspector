@@ -1,10 +1,12 @@
 package xyz.becvar.websiteinspector.utils;
 
 import java.net.URL;
+import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import xyz.becvar.websiteinspector.Main;
+import java.nio.charset.StandardCharsets;
 
 /**
  * This class contains utility methods for working with websites
@@ -25,13 +27,13 @@ public class WebsiteUtils
             HttpURLConnection conn = HttpClientManager.getConnection(urlString);
             conn.setRequestMethod("GET");
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            String inputLine;
-            while ((inputLine = in.readLine()) != null) {
-                result.append(inputLine);
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    result.append(inputLine);
+                }
             }
-            in.close();
-        } catch (Exception e) {
+        } catch (IOException e) {
             // Return null on any error, let the caller handle it
             return null;
         }
@@ -52,13 +54,13 @@ public class WebsiteUtils
             HttpURLConnection conn = HttpClientManager.getConnection(urlString);
             conn.setRequestMethod("GET");
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            String inputLine;
-            while ((inputLine = in.readLine()) != null) {
-                content.append(inputLine).append("\n");
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    content.append(inputLine).append("\n");
+                }
             }
-            in.close();
-        } catch (Exception e) {
+        } catch (IOException e) {
             return null;
         }
         return content.toString();

@@ -1,5 +1,6 @@
 package xyz.becvar.websiteinspector;
 
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import xyz.becvar.websiteinspector.utils.SystemUtils;
 import xyz.becvar.websiteinspector.utils.HttpClientManager;
@@ -24,7 +25,7 @@ public class Validator
 
             int responseCode = connection.getResponseCode();
             return (responseCode >= 200 && responseCode < 300);
-        } catch (Exception e) {
+        } catch (IOException e) {
             return false;
         }
     }

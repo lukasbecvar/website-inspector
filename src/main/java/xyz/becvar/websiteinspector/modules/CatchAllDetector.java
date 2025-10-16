@@ -2,6 +2,7 @@ package xyz.becvar.websiteinspector.modules;
 
 import java.net.URL;
 import java.util.List;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.security.SecureRandom;
 import java.net.HttpURLConnection;
@@ -51,7 +52,7 @@ public class CatchAllDetector {
             connection.setInstanceFollowRedirects(false);
             connection.setRequestMethod("HEAD");
             return connection.getResponseCode();
-        } catch (Exception e) {
+        } catch (IOException e) {
             return -1;
         }
     }

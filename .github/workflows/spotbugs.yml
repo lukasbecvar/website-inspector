@@ -1,0 +1,31 @@
+# static code analyse with spotbugs
+name: Spotbugs
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  spotbugs:
+    name: Spotbugs analyse
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+  
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+
+    - name: Setup Maven
+      uses: stCarolas/setup-maven@v4.5
+      with:
+        maven-version: 3.9.11
+
+    - name: Run verify
+      run: mvn clean verify

@@ -103,7 +103,7 @@ public class AdminPanelDetector implements AnalysisModule {
         private final List<String> foundPanels;
 
         public AdminPanelResult(List<String> foundPanels) {
-            this.foundPanels = foundPanels;
+            this.foundPanels = new ArrayList<>(foundPanels);
         }
 
         @Override

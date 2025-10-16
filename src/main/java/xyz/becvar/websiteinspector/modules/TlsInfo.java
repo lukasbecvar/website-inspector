@@ -2,6 +2,7 @@ package xyz.becvar.websiteinspector.modules;
 
 import java.net.URL;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Optional;
 import java.io.IOException;
 import javax.net.ssl.SSLSession;
@@ -33,12 +34,11 @@ public class TlsInfo implements AnalysisModule {
      */
     @Override
     public AnalysisResult analyze(String targetUrl) {
-        if (!targetUrl.toLowerCase().startsWith("https://")) {
+        if (!targetUrl.toLowerCase(Locale.ROOT).startsWith("https://")) {
             return null; // Skip non-HTTPS sites
         }
 
         try {
-            URL url = new URL(targetUrl);
             HttpsURLConnection conn = (HttpsURLConnection) HttpClientManager.getConnection(targetUrl);
             conn.connect();
 
@@ -83,8 +83,8 @@ public class TlsInfo implements AnalysisModule {
         public TlsInfoResult(String issuer, String subject, Date validFrom, Date validTo, String signatureAlgorithm, String publicKeyAlgorithm, String protocol) {
             this.issuer = issuer;
             this.subject = subject;
-            this.validFrom = validFrom;
-            this.validTo = validTo;
+            this.validFrom = (Date) validFrom.clone();
+            this.validTo = (Date) validTo.clone();
             this.signatureAlgorithm = signatureAlgorithm;
             this.publicKeyAlgorithm = publicKeyAlgorithm;
             this.protocol = protocol;
@@ -92,12 +92,12 @@ public class TlsInfo implements AnalysisModule {
 
         @Override
         public void print() {
-            // print header
+            // Print header
             Logger.printSpacer();
             Logger.log("TLS/SSL Certificate Info");
             Logger.printSpacer();
 
-            // print results
+            // Print results
             Logger.printColoredKeyValue("Protocol", protocol);
             Logger.printColoredKeyValue("Issuer", issuer);
             Logger.printColoredKeyValue("Subject", subject);

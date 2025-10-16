@@ -40,7 +40,7 @@ public class ServerInfo implements AnalysisModule {
             String ipAddress = InetAddress.getByName(urlObject.getHost()).getHostAddress();
             String serverType = connection.getHeaderField("Server");
             String cms = detectCms(targetUrl);
-            String protocol = urlObject.getProtocol().toUpperCase();
+            String protocol = urlObject.getProtocol().toUpperCase(Locale.ROOT);
             Map<String, List<String>> headers = connection.getHeaderFields();
 
             return new ServerInfoResult(ipAddress, serverType, cms, protocol, headers);
@@ -98,7 +98,7 @@ public class ServerInfo implements AnalysisModule {
             this.serverType = serverType;
             this.cms = cms;
             this.protocol = protocol;
-            this.headers = headers;
+            this.headers = new HashMap<>(headers);
         }
 
         @Override
@@ -122,7 +122,7 @@ public class ServerInfo implements AnalysisModule {
             Logger.printColoredKeyValue("Status", headers.get(null).get(0));
 
             Set<String> foundHeaders = new HashSet<>();
-            headers.keySet().stream().filter(Objects::nonNull).forEach(key -> foundHeaders.add(key.toLowerCase()));
+            headers.keySet().stream().filter(Objects::nonNull).forEach(key -> foundHeaders.add(key.toLowerCase(Locale.ROOT)));
 
             SECURITY_HEADERS.forEach(securityHeader -> {
                 if (foundHeaders.contains(securityHeader)) {
@@ -148,7 +148,7 @@ public class ServerInfo implements AnalysisModule {
             Logger.printSpacer();
             for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
                 String key = entry.getKey();
-                if (key != null && !SECURITY_HEADERS.contains(key.toLowerCase()) && !key.equalsIgnoreCase("x-powered-by") && !key.equalsIgnoreCase("Status")) {
+                if (key != null && !SECURITY_HEADERS.contains(key.toLowerCase(Locale.ROOT)) && !key.equalsIgnoreCase("x-powered-by") && !key.equalsIgnoreCase("Status")) {
                     Logger.printColoredKeyValue(key, String.join(", ", entry.getValue()));
                 }
             }

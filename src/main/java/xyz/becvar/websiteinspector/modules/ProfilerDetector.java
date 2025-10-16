@@ -135,7 +135,7 @@ public class ProfilerDetector implements AnalysisModule {
         private final List<String> foundProfilers;
 
         public ProfilerResult(List<String> foundProfilers) {
-            this.foundProfilers = foundProfilers;
+            this.foundProfilers = new ArrayList<>(foundProfilers);
         }
 
         @Override

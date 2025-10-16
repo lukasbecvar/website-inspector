@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.BufferedWriter;
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import xyz.becvar.websiteinspector.core.Config;
 
@@ -34,11 +35,15 @@ public class Logger {
         try {
             File logsDir = new File("logs");
             if (!logsDir.exists()) {
-                logsDir.mkdirs();
+                if (!logsDir.mkdirs()) {
+                    printError("Failed to create logs directory: " + logsDir.getAbsolutePath());
+                    fileWriter = null;
+                    return;
+                }
             }
             String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
             String fileName = String.format("logs/%s-%s.log", domain.replaceAll("[^a-zA-Z0-9.-]", "_"), dateTime);
-            fileWriter = new BufferedWriter(new FileWriter(fileName));
+            fileWriter = new BufferedWriter(new FileWriter(fileName, StandardCharsets.UTF_8));
         } catch (IOException e) {
             printError("Failed to initialize file logger: " + e.getMessage());
             fileWriter = null;
@@ -138,7 +143,7 @@ public class Logger {
     public static void rawLog(String msg) {
         logToFile(msg);
         clearConsoleLine();
-        System.out.println(ANSI_GREEN + msg + ANSI_RESET);
+        System.out.print(ANSI_GREEN + msg + ANSI_RESET);
         reprintProgressLine();
     }
 

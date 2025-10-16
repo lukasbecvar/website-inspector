@@ -12,6 +12,8 @@ import java.net.HttpURLConnection;
 import java.security.SecureRandom;
 import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
+import xyz.becvar.websiteinspector.Main;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import xyz.becvar.websiteinspector.core.Config;
 import xyz.becvar.websiteinspector.utils.Logger;
@@ -46,8 +48,8 @@ public class SubdomainScanner implements AnalysisModule {
 
         boolean scanHttp = !detectGlobalHttpRedirect(baseDomain);
 
-        try (InputStream inputStream = getClass().getResourceAsStream("/subdomains.txt");
-             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+        try (InputStream inputStream = Main.class.getResourceAsStream("/subdomains.txt");
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
             List<String> subdomains = new ArrayList<>();
             String subdomain;
@@ -159,7 +161,7 @@ public class SubdomainScanner implements AnalysisModule {
         private final Set<String> foundSubdomains;
 
         public SubdomainScanResult(Set<String> foundSubdomains) {
-            this.foundSubdomains = foundSubdomains;
+            this.foundSubdomains = new HashSet<>(foundSubdomains);
         }
 
         @Override

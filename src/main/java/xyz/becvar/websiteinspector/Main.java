@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
+import java.nio.charset.StandardCharsets;
 import xyz.becvar.websiteinspector.modules.*;
 import xyz.becvar.websiteinspector.utils.Logger;
 import xyz.becvar.websiteinspector.core.AnalysisResult;
@@ -88,13 +89,13 @@ public class Main {
             printResult(results, DirectoryScanner.DirectoryScanResult.class);
             printResult(results, SubdomainScanner.SubdomainScanResult.class);
 
+            Logger.printSpacer();
             if (pathCatchAll) {
                 Logger.printWarning("Path Catch-All Detected", "Directory scan was skipped.");
             }
             if (subdomainCatchAll) {
                 Logger.printWarning("Subdomain Catch-All Detected", "Subdomain scan was skipped.");
             }
-            Logger.printSpacer();
 
         } catch (Exception e) {
             Logger.printError("An unexpected error occurred: " + e.getMessage());
@@ -126,7 +127,7 @@ public class Main {
             return args[0];
         }
         Logger.prompt("Enter URL");
-        Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
         return scanner.nextLine();
     }
 }
