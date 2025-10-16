@@ -29,6 +29,26 @@ public class Main {
 
         // Parse command-line arguments
         List<String> argsList = new ArrayList<>(Arrays.asList(args));
+
+        // Extract URL first
+        String initialUrl = null;
+        int urlIndex = -1;
+        for (int i = 0; i < argsList.size(); i++) {
+            if (!argsList.get(i).startsWith("--")) {
+                initialUrl = argsList.get(i);
+                urlIndex = i;
+                break;
+            }
+        }
+
+        if (initialUrl != null) {
+            argsList.remove(urlIndex);
+        } else {
+            Logger.prompt("Enter URL");
+            Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
+            initialUrl = scanner.nextLine();
+        }
+
         final boolean isFileLoggingEnabled = !argsList.contains("--no-file-log");
         argsList.remove("--no-file-log");
 
@@ -49,8 +69,44 @@ public class Main {
         }
         Logger.setOutputFormat(outputFormat);
 
+        String subdomainsFilePath = null;
+        String routesFilePath = null;
+
+        // Parse --subdomains-file argument
+        String subdomainsFileArg = argsList.stream()
+            .filter(arg -> arg.startsWith("--subdomains-file="))
+            .findFirst()
+            .orElse(null);
+        if (subdomainsFileArg != null) {
+            subdomainsFilePath = subdomainsFileArg.split("=")[1];
+            argsList.remove(subdomainsFileArg);
+            if (outputFormat == OutputFormat.NORMAL) {
+                Logger.logStatus("Using custom subdomains wordlist: " + subdomainsFilePath);
+            }
+        } else {
+            if (outputFormat == OutputFormat.NORMAL) {
+                Logger.logStatus("Using default subdomains wordlist.");
+            }
+        }
+
+        // Parse --routes-file argument
+        String routesFileArg = argsList.stream()
+            .filter(arg -> arg.startsWith("--routes-file="))
+            .findFirst()
+            .orElse(null);
+        if (routesFileArg != null) {
+            routesFilePath = routesFileArg.split("=")[1];
+            argsList.remove(routesFileArg);
+            if (outputFormat == OutputFormat.NORMAL) {
+                Logger.logStatus("Using custom routes wordlist: " + routesFilePath);
+            }
+        } else {
+            if (outputFormat == OutputFormat.NORMAL) {
+                Logger.logStatus("Using default routes wordlist.");
+            }
+        }
+
         // Validate URL
-        String initialUrl = getUrl(argsList.toArray(new String[0]));
         String validatedUrl = null;
         try {
             validatedUrl = Validator.validateUrl(initialUrl);
@@ -77,13 +133,13 @@ public class Main {
             // run directory scan module
             boolean pathCatchAll = CatchAllDetector.isPathCatchAllActive(finalUrl);
             if (!pathCatchAll) {
-                modules.add(new DirectoryScanner());
+                modules.add(new DirectoryScanner(routesFilePath));
             }
 
             // run subdomain scan module
             boolean subdomainCatchAll = CatchAllDetector.isSubdomainCatchAllActive(finalUrl);
             if (!subdomainCatchAll) {
-                modules.add(new SubdomainScanner());
+                modules.add(new SubdomainScanner(subdomainsFilePath));
             }
 
             // --- Run analysis ---
@@ -141,19 +197,5 @@ public class Main {
         results.stream().filter(resultType::isInstance).findFirst().ifPresent(AnalysisResult::print);
     }
 
-    /**
-     * Gets the URL from the command-line arguments
-     * 
-     * @param args The command-line arguments
-     * 
-     * @return The URL
-     */
-    private static String getUrl(String[] args) {
-        if (args.length > 0) {
-            return args[0];
-        }
-        Logger.prompt("Enter URL");
-        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
-        return scanner.nextLine();
-    }
+
 }

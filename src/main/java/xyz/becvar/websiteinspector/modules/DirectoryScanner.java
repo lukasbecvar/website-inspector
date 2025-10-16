@@ -26,9 +26,27 @@ import xyz.becvar.websiteinspector.utils.HttpClientManager;
  */
 public class DirectoryScanner implements AnalysisModule {
 
+    private String routesFilePath;
+
     @Override
     public String getName() {
         return "Directory Scan";
+    }
+
+    public DirectoryScanner() {
+        this.routesFilePath = null;
+    }
+
+    public DirectoryScanner(String routesFilePath) {
+        this.routesFilePath = routesFilePath;
+    }
+
+    private InputStream getRoutesInputStream() throws IOException {
+        if (routesFilePath != null) {
+            return new java.io.FileInputStream(routesFilePath);
+        } else {
+            return Main.class.getResourceAsStream("/routes.txt");
+        }
     }
 
     /**
@@ -48,7 +66,7 @@ public class DirectoryScanner implements AnalysisModule {
         ExecutorService executor = Executors.newFixedThreadPool(Config.SCANNER_THREAD_POOL_SIZE);
         List<Future<?>> futures = new ArrayList<>();
 
-        try (InputStream inputStream = Main.class.getResourceAsStream("/routes.txt");
+        try (InputStream inputStream = getRoutesInputStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
             List<String> routes = new ArrayList<>();

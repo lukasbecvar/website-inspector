@@ -27,9 +27,27 @@ import xyz.becvar.websiteinspector.utils.HttpClientManager;
  */
 public class SubdomainScanner implements AnalysisModule {
 
+    private String subdomainsFilePath;
+
     @Override
     public String getName() {
         return "Subdomain Scan";
+    }
+
+    public SubdomainScanner() {
+        this.subdomainsFilePath = null;
+    }
+
+    public SubdomainScanner(String subdomainsFilePath) {
+        this.subdomainsFilePath = subdomainsFilePath;
+    }
+
+    private InputStream getSubdomainsInputStream() throws IOException {
+        if (subdomainsFilePath != null) {
+            return new java.io.FileInputStream(subdomainsFilePath);
+        } else {
+            return Main.class.getResourceAsStream("/subdomains.txt");
+        }
     }
 
     /**
@@ -48,7 +66,7 @@ public class SubdomainScanner implements AnalysisModule {
 
         boolean scanHttp = !detectGlobalHttpRedirect(baseDomain);
 
-        try (InputStream inputStream = Main.class.getResourceAsStream("/subdomains.txt");
+        try (InputStream inputStream = getSubdomainsInputStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
             List<String> subdomains = new ArrayList<>();
