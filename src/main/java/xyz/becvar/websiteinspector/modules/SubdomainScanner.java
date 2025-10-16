@@ -102,7 +102,7 @@ public class SubdomainScanner implements AnalysisModule {
                 }
             }
         } catch (IOException e) {
-            Logger.printWarning("Failed to check subdomain: " + urlString, e.getMessage());
+            /** ignore */
         } finally {
             int current = completed.incrementAndGet();
             Logger.printProgress("Scanning subdomains: " + current + "/" + total);

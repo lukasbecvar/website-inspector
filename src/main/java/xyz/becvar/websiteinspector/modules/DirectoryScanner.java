@@ -98,7 +98,7 @@ public class DirectoryScanner implements AnalysisModule {
                 }
             }
         } catch (IOException e) {
-            Logger.printWarning("Failed to check directory: " + urlString, e.getMessage());
+            /** ignore */
         } finally {
             int current = completed.incrementAndGet();
             Logger.printProgress("Scanning directories: " + current + "/" + total);
