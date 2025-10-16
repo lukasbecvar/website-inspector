@@ -8,9 +8,11 @@ import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.nio.charset.StandardCharsets;
 import xyz.becvar.websiteinspector.modules.*;
+import xyz.becvar.websiteinspector.OutputFormat;
 import xyz.becvar.websiteinspector.utils.Logger;
 import xyz.becvar.websiteinspector.core.AnalysisResult;
 import xyz.becvar.websiteinspector.core.AnalysisModule;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * This is the main class of the website-inspector application
@@ -22,12 +24,30 @@ public class Main {
      * 
      * @param args The command-line arguments
      */
+    @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     public static void main(String[] args) {
 
         // Parse command-line arguments
         List<String> argsList = new ArrayList<>(Arrays.asList(args));
         final boolean isFileLoggingEnabled = !argsList.contains("--no-file-log");
         argsList.remove("--no-file-log");
+
+        OutputFormat outputFormat = OutputFormat.NORMAL;
+        String outputArg = argsList.stream()
+            .filter(arg -> arg.startsWith("--output="))
+            .findFirst()
+            .orElse(null);
+
+        if (outputArg != null) {
+            String format = outputArg.split("=")[1];
+            try {
+                outputFormat = OutputFormat.valueOf(format.toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                Logger.printError("Invalid output format: " + format + ". Using NORMAL.");
+            }
+            argsList.remove(outputArg);
+        }
+        Logger.setOutputFormat(outputFormat);
 
         // Validate URL
         String initialUrl = getUrl(argsList.toArray(new String[0]));
@@ -71,30 +91,36 @@ public class Main {
             List<AnalysisResult> results = modules.stream()
                     .map(module -> {
                         Logger.logStatus("Running Module: " + module.getName());
-                        return module.analyze(finalUrl);
+                        AnalysisResult result = module.analyze(finalUrl);
+                        Logger.addAnalysisResult(result);
+                        return result;
                     })
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
             // --- Print final report ---
-            System.out.println("\n");
-            Logger.logStatus("--- FINAL ANALYSIS REPORT ---");
+            if (outputFormat == OutputFormat.NORMAL) {
+                System.out.println("\n");
+                Logger.logStatus("--- FINAL ANALYSIS REPORT ---");
 
-            // Print in desired order
-            printResult(results, ServerInfo.ServerInfoResult.class);
-            printResult(results, TlsInfo.TlsInfoResult.class);
-            printResult(results, SiteMapInfo.SiteMapInfoResult.class);
-            printResult(results, AdminPanelDetector.AdminPanelResult.class);
-            printResult(results, ProfilerDetector.ProfilerResult.class);
-            printResult(results, DirectoryScanner.DirectoryScanResult.class);
-            printResult(results, SubdomainScanner.SubdomainScanResult.class);
+                // Print in desired order
+                printResult(results, ServerInfo.ServerInfoResult.class);
+                printResult(results, TlsInfo.TlsInfoResult.class);
+                printResult(results, SiteMapInfo.SiteMapInfoResult.class);
+                printResult(results, AdminPanelDetector.AdminPanelResult.class);
+                printResult(results, ProfilerDetector.ProfilerResult.class);
+                printResult(results, DirectoryScanner.DirectoryScanResult.class);
+                printResult(results, SubdomainScanner.SubdomainScanResult.class);
 
-            Logger.printSpacer();
-            if (pathCatchAll) {
-                Logger.printWarning("Path Catch-All Detected", "Directory scan was skipped.");
-            }
-            if (subdomainCatchAll) {
-                Logger.printWarning("Subdomain Catch-All Detected", "Subdomain scan was skipped.");
+                Logger.printSpacer();
+                if (pathCatchAll) {
+                    Logger.printWarning("Path Catch-All Detected", "Directory scan was skipped.");
+                }
+                if (subdomainCatchAll) {
+                    Logger.printWarning("Subdomain Catch-All Detected", "Subdomain scan was skipped.");
+                }
+            } else if (outputFormat == OutputFormat.JSON) {
+                Logger.printJsonReport();
             }
 
         } catch (Exception e) {

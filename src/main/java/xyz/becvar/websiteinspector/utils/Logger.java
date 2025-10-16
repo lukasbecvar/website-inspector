@@ -1,13 +1,20 @@
 package xyz.becvar.websiteinspector.utils;
 
 import java.io.File;
+import java.util.List;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import com.google.gson.Gson;
 import java.io.BufferedWriter;
 import java.time.LocalDateTime;
+import com.google.gson.GsonBuilder;
+import com.google.gson.GsonBuilder;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import xyz.becvar.websiteinspector.core.Config;
+import xyz.becvar.websiteinspector.OutputFormat;
+import xyz.becvar.websiteinspector.core.AnalysisResult;
 
 /**
  * This class handles logging to the console and file
@@ -25,10 +32,13 @@ public class Logger {
     private static final String CONSOLE_PREFIX = ANSI_YELLOW + "[" + ANSI_GREEN + Config.APP_PREFIX + ANSI_YELLOW + "]" + ANSI_CYAN;
     private static String lastProgressMessage = "";
     private static BufferedWriter fileWriter = null;
+    private static OutputFormat outputFormat = OutputFormat.NORMAL;
+    private static List<AnalysisResult> analysisResults = new ArrayList<>();
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     /**
      * Initializes file logging for the given domain
-     * 
+     *
      * @param domain The domain to log for
      */
     public static void initFileLogging(String domain) {
@@ -60,6 +70,36 @@ public class Logger {
             } catch (IOException e) {
                 printError("Failed to close file logger: " + e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Sets the output format for the logger.
+     *
+     * @param format The desired output format (NORMAL or JSON).
+     */
+    public static void setOutputFormat(OutputFormat format) {
+        outputFormat = format;
+    }
+
+    /**
+     * Adds an AnalysisResult to the list for JSON output.
+     *
+     * @param result The AnalysisResult to add.
+     */
+    public static void addAnalysisResult(AnalysisResult result) {
+        if (outputFormat == OutputFormat.JSON) {
+            analysisResults.add(result);
+        }
+    }
+
+    /**
+     * Prints the collected analysis results as a JSON report to System.out.
+     * This method should only be called when the output format is JSON.
+     */
+    public static void printJsonReport() {
+        if (outputFormat == OutputFormat.JSON) {
+            System.out.println(GSON.toJson(analysisResults));
         }
     }
 
@@ -98,9 +138,13 @@ public class Logger {
     public static synchronized void printSpacer() {
         String message = "========================================================================================";
         logToFile(message);
-        clearConsoleLine();
-        System.out.println(ANSI_CYAN + message + ANSI_RESET);
-        reprintProgressLine();
+        if (outputFormat == OutputFormat.NORMAL) {
+            clearConsoleLine();
+            System.out.println(ANSI_CYAN + message + ANSI_RESET);
+            reprintProgressLine();
+        } else {
+            System.err.println(ANSI_CYAN + message + ANSI_RESET);
+        }
     }
 
     /**
@@ -109,9 +153,14 @@ public class Logger {
      * @param msg The message to log
      */
     public static synchronized void logStatus(String msg) {
-        clearConsoleLine();
-        System.out.println(CONSOLE_PREFIX + ": " + ANSI_CYAN + msg + ANSI_RESET);
-        reprintProgressLine();
+        if (outputFormat == OutputFormat.NORMAL) {
+            clearConsoleLine();
+            System.out.println(CONSOLE_PREFIX + ": " + ANSI_CYAN + msg + ANSI_RESET);
+            reprintProgressLine();
+        } else {
+            System.err.print("\r" + CONSOLE_PREFIX + ": " + ANSI_CYAN + msg + ANSI_RESET + "\u001B[K"); // Clear to end of line
+            System.err.flush();
+        }
     }
 
     /**
@@ -120,7 +169,7 @@ public class Logger {
      * @param msg The message to prompt with
      */
     public static void prompt(String msg) {
-        System.out.print(CONSOLE_PREFIX + ": " + msg + ": " + ANSI_RESET);
+        System.err.print(CONSOLE_PREFIX + ": " + msg + ": " + ANSI_RESET);
     }
 
     /**
@@ -130,9 +179,13 @@ public class Logger {
      */
     public static synchronized void log(String msg) {
         logToFile(msg);
-        clearConsoleLine();
-        System.out.println(CONSOLE_PREFIX + ": " + ANSI_CYAN + msg + ANSI_RESET);
-        reprintProgressLine();
+        if (outputFormat == OutputFormat.NORMAL) {
+            clearConsoleLine();
+            System.out.println(CONSOLE_PREFIX + ": " + ANSI_CYAN + msg + ANSI_RESET);
+            reprintProgressLine();
+        } else {
+            System.err.println(CONSOLE_PREFIX + ": " + ANSI_CYAN + msg + ANSI_RESET);
+        }
     }
 
     /**
@@ -142,9 +195,14 @@ public class Logger {
      */
     public static synchronized void rawLog(String msg) {
         logToFile(msg);
-        clearConsoleLine();
-        System.out.print(ANSI_GREEN + msg + ANSI_RESET);
-        reprintProgressLine();
+        if (outputFormat == OutputFormat.NORMAL) {
+            clearConsoleLine();
+            System.out.print(ANSI_GREEN + msg + ANSI_RESET);
+            reprintProgressLine();
+        } else {
+            System.err.print(ANSI_GREEN + msg + ANSI_RESET);
+            System.err.flush();
+        }
     }
 
     /**
@@ -158,9 +216,13 @@ public class Logger {
             value = "Not specified";
         }
         logToFile(key + ": " + value);
-        clearConsoleLine();
-        System.out.println(ANSI_BLUE + key + ANSI_RESET + ": " + ANSI_CYAN + value + ANSI_RESET);
-        reprintProgressLine();
+        if (outputFormat == OutputFormat.NORMAL) {
+            clearConsoleLine();
+            System.out.println(ANSI_BLUE + key + ANSI_RESET + ": " + ANSI_CYAN + value + ANSI_RESET);
+            reprintProgressLine();
+        } else {
+            System.err.println(ANSI_BLUE + key + ANSI_RESET + ": " + ANSI_CYAN + value + ANSI_RESET);
+        }
     }
 
     /**
@@ -171,9 +233,13 @@ public class Logger {
      */
     public static synchronized void printSuccess(String key, String value) {
         logToFile(key + ": " + value);
-        clearConsoleLine();
-        System.out.println(ANSI_GREEN + "[+] " + key + ANSI_RESET + ": " + value);
-        reprintProgressLine();
+        if (outputFormat == OutputFormat.NORMAL) {
+            clearConsoleLine();
+            System.out.println(ANSI_GREEN + "[+] " + key + ANSI_RESET + ": " + value);
+            reprintProgressLine();
+        } else {
+            System.err.println(ANSI_GREEN + "[+] " + key + ANSI_RESET + ": " + value);
+        }
     }
 
     /**
@@ -185,9 +251,13 @@ public class Logger {
     public static synchronized void printWarning(String key, String value) {
         String separator = value.isEmpty() ? "" : ": ";
         logToFile("[!] " + key + separator + value);
-        clearConsoleLine();
-        System.out.println(ANSI_YELLOW + "[!] " + key + ANSI_RESET + separator + value);
-        reprintProgressLine();
+        if (outputFormat == OutputFormat.NORMAL) {
+            clearConsoleLine();
+            System.out.println(ANSI_YELLOW + "[!] " + key + ANSI_RESET + separator + value);
+            reprintProgressLine();
+        } else {
+            System.err.println(ANSI_YELLOW + "[!] " + key + ANSI_RESET + separator + value);
+        }
     }
 
     /**
@@ -197,9 +267,13 @@ public class Logger {
      */
     public static synchronized void printError(String message) {
         logToFile("[ERROR] " + message);
-        clearConsoleLine();
-        System.out.println(ANSI_RED + "[ERROR] " + message + ANSI_RESET);
-        reprintProgressLine();
+        if (outputFormat == OutputFormat.NORMAL) {
+            clearConsoleLine();
+            System.out.println(ANSI_RED + "[ERROR] " + message + ANSI_RESET);
+            reprintProgressLine();
+        } else {
+            System.err.println(ANSI_RED + "[ERROR] " + message + ANSI_RESET);
+        }
     }
 
     /**
@@ -209,14 +283,24 @@ public class Logger {
      */ 
     public static synchronized void printProgress(String msg) {
         lastProgressMessage = "\r" + CONSOLE_PREFIX + ": " + msg;
-        System.out.print(lastProgressMessage);
+        if (outputFormat == OutputFormat.NORMAL) {
+            System.out.print(lastProgressMessage);
+        } else {
+            System.err.print(lastProgressMessage);
+            System.err.flush();
+        }
     }
 
     /**
      * Clears the progress message  
      */
     public static synchronized void clearProgress() {
-        clearConsoleLine();
+        if (outputFormat == OutputFormat.NORMAL) {
+            clearConsoleLine();
+        } else { // For JSON output, clear the current line on System.err
+            System.err.print("\r\u001B[K");
+            System.err.flush();
+        }
         lastProgressMessage = "";
     }
 }
