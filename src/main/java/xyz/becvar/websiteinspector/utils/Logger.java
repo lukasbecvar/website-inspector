@@ -176,9 +176,10 @@ public class Logger {
      * @param value The value to print
      */
     public static void printWarning(String key, String value) {
-        logToFile("[!] " + key + ": " + value);
+        String separator = value.isEmpty() ? "" : ": ";
+        logToFile("[!] " + key + separator + value);
         clearConsoleLine();
-        System.out.println(ANSI_YELLOW + "[!] " + key + ANSI_RESET + ": " + value);
+        System.out.println(ANSI_YELLOW + "[!] " + key + ANSI_RESET + separator + value);
         reprintProgressLine();
     }
 

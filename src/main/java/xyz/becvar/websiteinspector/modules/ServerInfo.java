@@ -81,8 +81,11 @@ public class ServerInfo implements AnalysisModule {
      */
     public static class ServerInfoResult implements AnalysisResult {
         private static final Set<String> SECURITY_HEADERS = new HashSet<>(Arrays.asList(
-                "strict-transport-security", "content-security-policy", "x-frame-options",
-                "x-content-type-options", "referrer-policy", "permissions-policy"));
+            "cross-origin-embedder-policy",
+            "x-content-type-options", "referrer-policy", "permissions-policy",
+            "strict-transport-security", "content-security-policy", "x-frame-options",
+            "x-xss-protection", "cross-origin-opener-policy", "cross-origin-resource-policy"
+        ));
 
         private final String ipAddress;
         private final String serverType;

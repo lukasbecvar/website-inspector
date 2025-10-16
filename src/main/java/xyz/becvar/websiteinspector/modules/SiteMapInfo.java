@@ -75,11 +75,13 @@ public class SiteMapInfo implements AnalysisModule {
 
         @Override
         public void print() {
+            // robots.txt summary
             Logger.printSpacer();
             Logger.log("Robots.txt Summary");
             Logger.printSpacer();
             Logger.rawLog(robotsSummary);
 
+            // sitemap.xml summary
             Logger.printSpacer();
             Logger.log("Sitemap.xml Summary");
             Logger.printSpacer();

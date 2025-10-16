@@ -53,7 +53,10 @@ public class Main {
 
             List<AnalysisModule> modules = new ArrayList<>();
             modules.add(new ServerInfo());
+            modules.add(new TlsInfo());
             modules.add(new SiteMapInfo());
+            modules.add(new AdminPanelDetector());
+            modules.add(new ProfilerDetector());
 
             // run directory scan module
             boolean pathCatchAll = CatchAllDetector.isPathCatchAllActive(finalUrl);
@@ -78,13 +81,17 @@ public class Main {
                     .collect(Collectors.toList());
 
             // --- Print final report ---
+            System.out.println("\n");
             Logger.logStatus("--- FINAL ANALYSIS REPORT ---");
 
             // Print in desired order
             printResult(results, ServerInfo.ServerInfoResult.class);
+            printResult(results, TlsInfo.TlsInfoResult.class);
+            printResult(results, SiteMapInfo.SiteMapInfoResult.class);
+            printResult(results, AdminPanelDetector.AdminPanelResult.class);
+            printResult(results, ProfilerDetector.ProfilerResult.class);
             printResult(results, DirectoryScanner.DirectoryScanResult.class);
             printResult(results, SubdomainScanner.SubdomainScanResult.class);
-            printResult(results, SiteMapInfo.SiteMapInfoResult.class);
 
             if (pathCatchAll) {
                 Logger.printWarning("Path Catch-All Detected", "Directory scan was skipped.");
