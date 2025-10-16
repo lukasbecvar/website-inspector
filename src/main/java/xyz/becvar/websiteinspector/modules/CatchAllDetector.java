@@ -7,18 +7,19 @@ import java.security.SecureRandom;
 import java.net.HttpURLConnection;
 import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
-import xyz.becvar.websiteinspector.Main;
 import java.util.concurrent.ExecutorService;
+import xyz.becvar.websiteinspector.core.Config;
 import xyz.becvar.websiteinspector.utils.Logger;
+import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
 /**
  * This class contains the logic for detecting catch-alls on a website
  */
 public class CatchAllDetector {
 
-    private static final int THREAD_POOL_SIZE = Main.SCANNER_THREAD_POOL_SIZE;
     private static final int RANDOM_TEST_COUNT = 10;
     private static final int RANDOM_STRING_LENGTH = 20;
+    private static final int THREAD_POOL_SIZE = Config.SCANNER_THREAD_POOL_SIZE;
     private static final String ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyz0123456789";
     private static final SecureRandom random = new SecureRandom();
 
@@ -46,12 +47,9 @@ public class CatchAllDetector {
      */
     private static int checkUrl(String urlString) {
         try {
-            HttpURLConnection connection = (HttpURLConnection) new URL(urlString).openConnection();
+            HttpURLConnection connection = HttpClientManager.getConnection(urlString);
             connection.setInstanceFollowRedirects(false);
             connection.setRequestMethod("HEAD");
-            connection.setConnectTimeout(Main.CONNECTION_TIMEOUT * 1000);
-            connection.setReadTimeout(Main.CONNECTION_TIMEOUT * 1000);
-            connection.setRequestProperty("User-Agent", Main.USER_AGENT);
             return connection.getResponseCode();
         } catch (Exception e) {
             return -1;

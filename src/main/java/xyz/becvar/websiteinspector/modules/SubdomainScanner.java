@@ -13,6 +13,7 @@ import java.security.SecureRandom;
 import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import xyz.becvar.websiteinspector.core.Config;
 import xyz.becvar.websiteinspector.utils.Logger;
 import java.util.concurrent.atomic.AtomicInteger;
 import xyz.becvar.websiteinspector.core.AnalysisModule;
@@ -39,7 +40,7 @@ public class SubdomainScanner implements AnalysisModule {
     @Override
     public AnalysisResult analyze(String targetUrl) {
         Set<String> foundSubdomains = new HashSet<>();
-        ExecutorService executor = Executors.newFixedThreadPool(30);
+        ExecutorService executor = Executors.newFixedThreadPool(Config.SCANNER_THREAD_POOL_SIZE);
         List<Future<?>> futures = new ArrayList<>();
         String baseDomain = targetUrl.replaceAll("^(http[s]?://)", "").replaceAll("/$", "");
 
@@ -73,7 +74,9 @@ public class SubdomainScanner implements AnalysisModule {
         for (Future<?> future : futures) {
             try {
                 future.get();
-            } catch (Exception e) { /* Ignore */ }
+            } catch (Exception e) {
+                Logger.printError("Failed to check subdomain: " + e.getMessage());
+            }
         }
         Logger.clearProgress();
         return new SubdomainScanResult(foundSubdomains);
@@ -97,7 +100,7 @@ public class SubdomainScanner implements AnalysisModule {
                 }
             }
         } catch (IOException e) {
-            // Ignore
+            Logger.printWarning("Failed to check subdomain: " + urlString, e.getMessage());
         } finally {
             int current = completed.incrementAndGet();
             Logger.printProgress("Scanning subdomains: " + current + "/" + total);

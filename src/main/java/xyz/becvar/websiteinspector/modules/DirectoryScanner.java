@@ -12,6 +12,7 @@ import java.net.HttpURLConnection;
 import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import xyz.becvar.websiteinspector.core.Config;
 import xyz.becvar.websiteinspector.utils.Logger;
 import java.util.concurrent.atomic.AtomicInteger;
 import xyz.becvar.websiteinspector.core.AnalysisModule;
@@ -42,7 +43,7 @@ public class DirectoryScanner implements AnalysisModule {
             targetUrl += "/";
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(30);
+        ExecutorService executor = Executors.newFixedThreadPool(Config.SCANNER_THREAD_POOL_SIZE);
         List<Future<?>> futures = new ArrayList<>();
 
         try (InputStream inputStream = getClass().getResourceAsStream("/routes.txt");
@@ -69,7 +70,9 @@ public class DirectoryScanner implements AnalysisModule {
         for (Future<?> future : futures) {
             try {
                 future.get();
-            } catch (Exception e) { /* Ignore */ }
+            } catch (Exception e) {
+                Logger.printError("Failed to check route: " + e.getMessage());
+            }
         }
         Logger.clearProgress();
         return new DirectoryScanResult(foundDirectories);
@@ -93,7 +96,7 @@ public class DirectoryScanner implements AnalysisModule {
                 }
             }
         } catch (IOException e) {
-            // Ignore connection errors
+            Logger.printWarning("Failed to check directory: " + urlString, e.getMessage());
         } finally {
             int current = completed.incrementAndGet();
             Logger.printProgress("Scanning directories: " + current + "/" + total);

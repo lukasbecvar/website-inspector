@@ -15,12 +15,6 @@ import xyz.becvar.websiteinspector.core.AnalysisModule;
  * This is the main class of the website-inspector application
  */
 public class Main {
-    
-    // Core configuration
-    public static final int SCANNER_THREAD_POOL_SIZE = 30;
-    public static final int CONNECTION_TIMEOUT = 3;
-    public static final String APP_PREFIX = "WI";
-    public static final String USER_AGENT = "website-inspector (becvar.xyz)";
 
     /**
      * The main method of the application
@@ -36,10 +30,11 @@ public class Main {
 
         // Validate URL
         String initialUrl = getUrl(argsList.toArray(new String[0]));
-        String validatedUrl = Validator.validateUrl(initialUrl);
-        if (validatedUrl == null) {
-            Logger.printError("URL could not be validated. Exiting.");
-            return;
+        String validatedUrl = null;
+        try {
+            validatedUrl = Validator.validateUrl(initialUrl);
+        } catch (RuntimeException e) {
+            return; // Exit if validation fails
         }
 
         final String finalUrl = validatedUrl;
@@ -106,7 +101,6 @@ public class Main {
             e.printStackTrace();
         } finally {
             Logger.closeFileLogging();
-            System.exit(0);
         }
     }
 

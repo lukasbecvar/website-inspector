@@ -1,6 +1,5 @@
 package xyz.becvar.websiteinspector;
 
-import java.net.URL;
 import java.net.HttpURLConnection;
 import xyz.becvar.websiteinspector.utils.SystemUtils;
 import xyz.becvar.websiteinspector.utils.HttpClientManager;
@@ -44,7 +43,6 @@ public class Validator
 
         if (url == null || url.trim().isEmpty()) {
             SystemUtils.shutdown("URL is null or empty.");
-            return null;
         }
 
         // remove last slash
@@ -72,9 +70,9 @@ public class Validator
         // check if HTTP is available
         if (checkIsWebsiteAvailable(httpUrl)) {
             return httpUrl;
-        } else {
-            SystemUtils.shutdown("Website is not available.");
-            return null;
         }
+
+        SystemUtils.shutdown("Website is not available.");
+        return null;
     }
 }

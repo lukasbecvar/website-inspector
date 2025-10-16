@@ -3,7 +3,7 @@ package xyz.becvar.websiteinspector.utils;
 import java.net.URL;
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import xyz.becvar.websiteinspector.Main;
+import xyz.becvar.websiteinspector.core.Config;
 
 /**
  * This class manages the HttpURLConnection
@@ -22,9 +22,9 @@ public class HttpClientManager {
     public static HttpURLConnection getConnection(String urlString) throws IOException {
         URL url = new URL(urlString);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setConnectTimeout(Main.CONNECTION_TIMEOUT * 1000);
-        connection.setReadTimeout(Main.CONNECTION_TIMEOUT * 1000);
-        connection.setRequestProperty("User-Agent", Main.USER_AGENT);
+        connection.setConnectTimeout(Config.CONNECTION_TIMEOUT * 1000);
+        connection.setReadTimeout(Config.CONNECTION_TIMEOUT * 1000);
+        connection.setRequestProperty("User-Agent", Config.USER_AGENT);
         return connection;
     }
 }

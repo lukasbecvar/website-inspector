@@ -5,8 +5,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.BufferedWriter;
 import java.time.LocalDateTime;
-import xyz.becvar.websiteinspector.Main;
 import java.time.format.DateTimeFormatter;
+import xyz.becvar.websiteinspector.core.Config;
 
 /**
  * This class handles logging to the console and file
@@ -21,7 +21,7 @@ public class Logger {
     public static final String ANSI_BLUE = "\u001B[34m";
     public static final String ANSI_CYAN = "\u001B[36m";
 
-    private static final String CONSOLE_PREFIX = ANSI_YELLOW + "[" + ANSI_GREEN + Main.APP_PREFIX + ANSI_YELLOW + "]" + ANSI_CYAN;
+    private static final String CONSOLE_PREFIX = ANSI_YELLOW + "[" + ANSI_GREEN + Config.APP_PREFIX + ANSI_YELLOW + "]" + ANSI_CYAN;
     private static String lastProgressMessage = "";
     private static BufferedWriter fileWriter = null;
 
@@ -63,11 +63,13 @@ public class Logger {
      * 
      * @param cleanMessage The message to log
      */
-    private static void logToFile(String cleanMessage) {
+    private static synchronized void logToFile(String cleanMessage) {
         if (fileWriter != null) {
             try {
                 fileWriter.write(cleanMessage + "\n");
-            } catch (IOException e) { /* Ignore */ }
+            } catch (IOException e) {
+                Logger.printError("Failed to write to log file: " + e.getMessage());
+            }
         }
     }
 

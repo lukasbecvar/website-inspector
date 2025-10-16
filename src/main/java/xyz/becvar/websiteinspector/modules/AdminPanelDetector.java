@@ -12,6 +12,7 @@ import xyz.becvar.websiteinspector.utils.WebsiteUtils;
 import xyz.becvar.websiteinspector.core.AnalysisModule;
 import xyz.becvar.websiteinspector.core.AnalysisResult;
 import xyz.becvar.websiteinspector.utils.HttpClientManager;
+import xyz.becvar.websiteinspector.modules.CatchAllDetector;
 
 /**
  * This class detects admin panels on a website
@@ -38,7 +39,6 @@ public class AdminPanelDetector implements AnalysisModule {
         ADMIN_PANELS.put("Mongo Express", new String[]{"/mongo-express/"});
         ADMIN_PANELS.put("Kibana", new String[]{"/kibana/"});
         ADMIN_PANELS.put("Redis Commander", new String[]{"/redis-commander/"});
-
         ADMIN_PANELS.put("Jenkins", new String[]{"/jenkins/login"});
         ADMIN_PANELS.put("GitLab", new String[]{"/users/sign_in"});
         ADMIN_PANELS.put("Prometheus", new String[]{"/graph"});
@@ -60,7 +60,7 @@ public class AdminPanelDetector implements AnalysisModule {
     public AnalysisResult analyze(String targetUrl) {
         List<String> foundPanels = new ArrayList<>();
 
-        if (!isCatchAllActive(targetUrl)) {
+        if (!CatchAllDetector.isPathCatchAllActive(targetUrl)) {
             // Check for panels based on URL paths
             for (Map.Entry<String, String[]> entry : ADMIN_PANELS.entrySet()) {
                 String panelName = entry.getKey();
@@ -94,28 +94,6 @@ public class AdminPanelDetector implements AnalysisModule {
         }
 
         return new AdminPanelResult(foundPanels);
-    }
-
-    /**
-     * Checks if a catch-all is active on the given target URL
-     * 
-     * @param targetUrl The target URL to check
-     * 
-     * @return True if a catch-all is active, false otherwise
-     */
-    private boolean isCatchAllActive(String targetUrl) {
-        // Generate a random path
-        String randomPath = "/" + UUID.randomUUID().toString();
-        String url = targetUrl + randomPath;
-
-        try {
-            HttpURLConnection connection = HttpClientManager.getConnection(url);
-            connection.setRequestMethod("HEAD");
-            int responseCode = connection.getResponseCode();
-            return responseCode >= 200 && responseCode < 300;
-        } catch (IOException e) {
-            return false;
-        }
     }
 
     /**

@@ -13,6 +13,6 @@ public class SystemUtils
     public static void shutdown(String msg)
     {
         Logger.printError(msg);
-        System.exit(0);
+        throw new RuntimeException(msg);
     }
 }
