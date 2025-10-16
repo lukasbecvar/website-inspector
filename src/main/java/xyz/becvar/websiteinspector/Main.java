@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import xyz.becvar.websiteinspector.modules.*;
 import xyz.becvar.websiteinspector.OutputFormat;
 import xyz.becvar.websiteinspector.utils.Logger;
+import xyz.becvar.websiteinspector.HelpComponent;
 import xyz.becvar.websiteinspector.core.AnalysisResult;
 import xyz.becvar.websiteinspector.core.AnalysisModule;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -21,11 +22,19 @@ public class Main {
 
     /**
      * The main method of the application
-     * 
+     *
      * @param args The command-line arguments
      */
     @SuppressFBWarnings("REC_CATCH_EXCEPTION")
     public static void main(String[] args) {
+        
+        // help print trigger
+        for (String arg : args) {
+            if (arg.equalsIgnoreCase("-h") || arg.equalsIgnoreCase("--help")) {
+                HelpComponent.printHelp();
+                return;
+            }
+        }
 
         // Parse command-line arguments
         List<String> argsList = new ArrayList<>(Arrays.asList(args));
@@ -189,13 +198,11 @@ public class Main {
 
     /**
      * Prints the result of the analysis
-     * 
+     *
      * @param results The results to print
      * @param resultType The type of result to print
      */
     private static void printResult(List<AnalysisResult> results, Class<?> resultType) {
         results.stream().filter(resultType::isInstance).findFirst().ifPresent(AnalysisResult::print);
     }
-
-
 }
