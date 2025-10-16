@@ -95,7 +95,7 @@ public class Logger {
     /**
      * Prints a spacer line
      */
-    public static void printSpacer() {
+    public static synchronized void printSpacer() {
         String message = "========================================================================================";
         logToFile(message);
         clearConsoleLine();
@@ -108,7 +108,7 @@ public class Logger {
      * 
      * @param msg The message to log
      */
-    public static void logStatus(String msg) {
+    public static synchronized void logStatus(String msg) {
         clearConsoleLine();
         System.out.println(CONSOLE_PREFIX + ": " + ANSI_CYAN + msg + ANSI_RESET);
         reprintProgressLine();
@@ -128,7 +128,7 @@ public class Logger {
      * 
      * @param msg The message to log
      */
-    public static void log(String msg) {
+    public static synchronized void log(String msg) {
         logToFile(msg);
         clearConsoleLine();
         System.out.println(CONSOLE_PREFIX + ": " + ANSI_CYAN + msg + ANSI_RESET);
@@ -140,7 +140,7 @@ public class Logger {
      * 
      * @param msg The message to log
      */
-    public static void rawLog(String msg) {
+    public static synchronized void rawLog(String msg) {
         logToFile(msg);
         clearConsoleLine();
         System.out.print(ANSI_GREEN + msg + ANSI_RESET);
@@ -153,7 +153,7 @@ public class Logger {
      * @param key The key to print
      * @param value The value to print
      */
-    public static void printColoredKeyValue(String key, String value) {
+    public static synchronized void printColoredKeyValue(String key, String value) {
         if (value == null || value.trim().isEmpty() || value.equalsIgnoreCase("null")) {
             value = "Not specified";
         }
@@ -169,7 +169,7 @@ public class Logger {
      * @param key The key to print
      * @param value The value to print
      */
-    public static void printSuccess(String key, String value) {
+    public static synchronized void printSuccess(String key, String value) {
         logToFile(key + ": " + value);
         clearConsoleLine();
         System.out.println(ANSI_GREEN + "[+] " + key + ANSI_RESET + ": " + value);
@@ -182,7 +182,7 @@ public class Logger {
      * @param key The key to print
      * @param value The value to print
      */
-    public static void printWarning(String key, String value) {
+    public static synchronized void printWarning(String key, String value) {
         String separator = value.isEmpty() ? "" : ": ";
         logToFile("[!] " + key + separator + value);
         clearConsoleLine();
@@ -195,7 +195,7 @@ public class Logger {
      * 
      * @param message The message to print
      */
-    public static void printError(String message) {
+    public static synchronized void printError(String message) {
         logToFile("[ERROR] " + message);
         clearConsoleLine();
         System.out.println(ANSI_RED + "[ERROR] " + message + ANSI_RESET);
@@ -207,7 +207,7 @@ public class Logger {
      * 
      * @param msg The message to print
      */ 
-    public static void printProgress(String msg) {
+    public static synchronized void printProgress(String msg) {
         lastProgressMessage = "\r" + CONSOLE_PREFIX + ": " + msg;
         System.out.print(lastProgressMessage);
     }
@@ -215,7 +215,7 @@ public class Logger {
     /**
      * Clears the progress message  
      */
-    public static void clearProgress() {
+    public static synchronized void clearProgress() {
         clearConsoleLine();
         lastProgressMessage = "";
     }
