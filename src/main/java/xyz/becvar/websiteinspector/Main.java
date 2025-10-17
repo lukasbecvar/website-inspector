@@ -153,6 +153,7 @@ public class Main {
 
             // --- Run analysis ---
             Logger.logStatus("Analysis modules prepared. Starting scan...");
+            long startTime = System.currentTimeMillis();
             List<AnalysisResult> results = modules.stream()
                     .map(module -> {
                         Logger.logStatus("Running Module: " + module.getName());
@@ -162,6 +163,7 @@ public class Main {
                     })
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
+            long scanDuration = System.currentTimeMillis() - startTime;
 
             // --- Print final report ---
             if (outputFormat == OutputFormat.NORMAL) {
@@ -184,8 +186,9 @@ public class Main {
                 if (subdomainCatchAll) {
                     Logger.printWarning("Subdomain Catch-All Detected", "Subdomain scan was skipped.");
                 }
+                Logger.printScanDuration(scanDuration);
             } else if (outputFormat == OutputFormat.JSON) {
-                Logger.printJsonReport();
+                Logger.printJsonReport(scanDuration);
             }
 
         } catch (Exception e) {

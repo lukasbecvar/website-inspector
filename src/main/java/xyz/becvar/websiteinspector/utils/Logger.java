@@ -1,20 +1,21 @@
 package xyz.becvar.websiteinspector.utils;
 
-import java.io.File;
-import java.util.List;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
 import com.google.gson.Gson;
-import java.io.BufferedWriter;
-import java.time.LocalDateTime;
 import com.google.gson.GsonBuilder;
-import com.google.gson.GsonBuilder;
-import java.nio.charset.StandardCharsets;
-import java.time.format.DateTimeFormatter;
-import xyz.becvar.websiteinspector.core.Config;
 import xyz.becvar.websiteinspector.OutputFormat;
 import xyz.becvar.websiteinspector.core.AnalysisResult;
+import xyz.becvar.websiteinspector.core.Config;
+import xyz.becvar.websiteinspector.dto.JsonReport;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class handles logging to the console and file
@@ -34,7 +35,7 @@ public class Logger {
     private static BufferedWriter fileWriter = null;
     private static OutputFormat outputFormat = OutputFormat.NORMAL;
     private static List<AnalysisResult> analysisResults = new ArrayList<>();
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
     /**
      * Initializes file logging for the given domain
@@ -96,11 +97,55 @@ public class Logger {
     /**
      * Prints the collected analysis results as a JSON report to System.out.
      * This method should only be called when the output format is JSON.
+     * 
+     * @param scanDuration The duration of the scan in milliseconds.
      */
-    public static void printJsonReport() {
+    public static void printJsonReport(long scanDuration) {
         if (outputFormat == OutputFormat.JSON) {
-            System.out.println(GSON.toJson(analysisResults));
+            JsonReport report = new JsonReport(scanDuration, analysisResults);
+            System.out.println(GSON.toJson(report));
         }
+    }
+
+    /**
+     * Formats duration in milliseconds to a human-readable format.
+     * 
+     * @param millis The duration in milliseconds.
+     * 
+     * @return A string representing the duration.
+     */
+    private static String formatDuration(long millis) {
+        long hours = java.util.concurrent.TimeUnit.MILLISECONDS.toHours(millis);
+        millis -= java.util.concurrent.TimeUnit.HOURS.toMillis(hours);
+        long minutes = java.util.concurrent.TimeUnit.MILLISECONDS.toMinutes(millis);
+        millis -= java.util.concurrent.TimeUnit.MINUTES.toMillis(minutes);
+        long seconds = java.util.concurrent.TimeUnit.MILLISECONDS.toSeconds(millis);
+        millis -= java.util.concurrent.TimeUnit.SECONDS.toMillis(seconds);
+
+        StringBuilder sb = new StringBuilder();
+        if (hours > 0) {
+            sb.append(hours).append("h ");
+        }
+        if (minutes > 0) {
+            sb.append(minutes).append("m ");
+        }
+        if (seconds > 0) {
+            sb.append(seconds).append("s ");
+        }
+        if (millis > 0 || sb.length() == 0) {
+            sb.append(millis).append("ms");
+        }
+
+        return sb.toString().trim();
+    }
+
+    /**
+     * Prints the scan duration.
+     * 
+     * @param scanDuration The duration of the scan in milliseconds.
+     */
+    public static synchronized void printScanDuration(long scanDuration) {
+        log("Scan finished in " + formatDuration(scanDuration));
     }
 
     /**
