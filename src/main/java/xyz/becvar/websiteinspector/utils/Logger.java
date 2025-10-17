@@ -1,21 +1,20 @@
 package xyz.becvar.websiteinspector.utils;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import xyz.becvar.websiteinspector.OutputFormat;
-import xyz.becvar.websiteinspector.core.AnalysisResult;
-import xyz.becvar.websiteinspector.core.Config;
-import xyz.becvar.websiteinspector.dto.JsonReport;
-
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
+import java.io.FileWriter;
+import java.util.ArrayList;
+import java.io.IOException;
+import com.google.gson.Gson;
+import java.io.BufferedWriter;
+import java.time.LocalDateTime;
+import com.google.gson.GsonBuilder;
+import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
+import xyz.becvar.websiteinspector.core.Config;
+import xyz.becvar.websiteinspector.OutputFormat;
+import xyz.becvar.websiteinspector.dto.JsonReport;
+import xyz.becvar.websiteinspector.core.AnalysisResult;
 
 /**
  * This class handles logging to the console and file

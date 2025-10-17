@@ -1,10 +1,9 @@
 package xyz.becvar.websiteinspector.dto;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import xyz.becvar.websiteinspector.core.AnalysisResult;
-
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
+import xyz.becvar.websiteinspector.core.AnalysisResult;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * A JSON report for the scan results.
