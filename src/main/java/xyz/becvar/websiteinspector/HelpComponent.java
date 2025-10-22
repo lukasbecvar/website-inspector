@@ -1,5 +1,8 @@
 package xyz.becvar.websiteinspector;
 
+/**
+ * This class provides help information
+ */
 public class HelpComponent {
 
     /**
@@ -12,7 +15,8 @@ public class HelpComponent {
         System.out.println("  --output=<format>         Specify the output format (e.g., NORMAL, JSON).");
         System.out.println("  --subdomains-file=<file>  Specify a custom wordlist for subdomain scanning.");
         System.out.println("  --routes-file=<file>      Specify a custom wordlist for route scanning.");
-        System.out.println("  --no-file-log             Disable logging to a file.\n");
+        System.out.println("  --no-file-log             Disable logging to a file.");
+        System.out.println("  --simple                  Disable subdomain and directory scanning.\n");
         System.out.println("Examples:");
         System.out.println("  Normal usage:");
         System.out.println("    java -jar WebsiteInspector.jar https://example.com --output=NORMAL\n");

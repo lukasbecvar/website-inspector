@@ -58,6 +58,11 @@ public class Main {
             initialUrl = scanner.nextLine();
         }
 
+        final boolean isSimpleScan = argsList.contains("--simple");
+        if (isSimpleScan) {
+            argsList.remove("--simple");
+        }
+
         final boolean isFileLoggingEnabled = !argsList.contains("--no-file-log");
         argsList.remove("--no-file-log");
 
@@ -140,16 +145,21 @@ public class Main {
             modules.add(new AdminPanelDetector());
             modules.add(new ProfilerDetector());
 
-            // run directory scan module
-            boolean pathCatchAll = CatchAllDetector.isPathCatchAllActive(finalUrl);
-            if (!pathCatchAll) {
-                modules.add(new DirectoryScanner(routesFilePath));
-            }
+            boolean pathCatchAll = false;
+            boolean subdomainCatchAll = false;
 
-            // run subdomain scan module
-            boolean subdomainCatchAll = CatchAllDetector.isSubdomainCatchAllActive(finalUrl);
-            if (!subdomainCatchAll) {
-                modules.add(new SubdomainScanner(subdomainsFilePath));
+            if (!isSimpleScan) {
+                // run directory scan module
+                pathCatchAll = CatchAllDetector.isPathCatchAllActive(finalUrl);
+                if (!pathCatchAll) {
+                    modules.add(new DirectoryScanner(routesFilePath));
+                }
+
+                // run subdomain scan module
+                subdomainCatchAll = CatchAllDetector.isSubdomainCatchAllActive(finalUrl);
+                if (!subdomainCatchAll) {
+                    modules.add(new SubdomainScanner(subdomainsFilePath));
+                }
             }
 
             // --- Run analysis ---
