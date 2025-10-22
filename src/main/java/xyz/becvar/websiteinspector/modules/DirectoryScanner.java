@@ -22,7 +22,11 @@ import xyz.becvar.websiteinspector.core.AnalysisResult;
 import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
 /**
- * This class implements the Directory Scan analysis module
+ * Class DirectoryScanner
+ *
+ * This module implements the directory scan analysis
+ *
+ * @package xyz.becvar.websiteinspector.modules
  */
 public class DirectoryScanner implements AnalysisModule {
 
@@ -31,10 +35,6 @@ public class DirectoryScanner implements AnalysisModule {
     @Override
     public String getName() {
         return "Directory Scan";
-    }
-
-    public DirectoryScanner() {
-        this.routesFilePath = null;
     }
 
     public DirectoryScanner(String routesFilePath) {
@@ -107,8 +107,9 @@ public class DirectoryScanner implements AnalysisModule {
      * @param completed The atomic integer of completed directories
      */
     private void checkUrl(String urlString, Set<String> foundDirectories, int total, AtomicInteger completed) {
+        HttpURLConnection connection = null;
         try {
-            HttpURLConnection connection = HttpClientManager.getConnection(urlString);
+            connection = HttpClientManager.getConnection(urlString);
             connection.setRequestMethod("GET");
             if (connection.getResponseCode() >= 200 && connection.getResponseCode() < 400) {
                 synchronized (foundDirectories) {
@@ -116,19 +117,19 @@ public class DirectoryScanner implements AnalysisModule {
                 }
             }
         } catch (IOException e) {
-            /** ignore */
+            // ignore
         } finally {
+            if (connection != null) connection.disconnect();
             int current = completed.incrementAndGet();
             Logger.printProgress("Scanning directories: " + current + "/" + total);
         }
     }
 
     /**
-     * The result of the directory scan analysis
+     * This class represents result of directory scan analysis
      */
     public static class DirectoryScanResult implements AnalysisResult {
         private final Set<String> foundDirectories;
-
         public DirectoryScanResult(Set<String> foundDirectories) {
             this.foundDirectories = new HashSet<>(foundDirectories);
         }

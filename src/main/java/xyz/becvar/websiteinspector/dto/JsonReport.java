@@ -6,10 +6,15 @@ import xyz.becvar.websiteinspector.core.AnalysisResult;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
- * A JSON report for the scan results.
+ * Class JsonReport
+ *
+ * JSON report for the scan results
+ *
+ * @package xyz.becvar.websiteinspector.dto
  */
 @SuppressFBWarnings("URF_UNREAD_FIELD")
 public class JsonReport {
+
     private final long scanDurationMs;
     private final List<AnalysisResult> results;
 

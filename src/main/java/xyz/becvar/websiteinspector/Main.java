@@ -8,15 +8,17 @@ import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.nio.charset.StandardCharsets;
 import xyz.becvar.websiteinspector.modules.*;
-import xyz.becvar.websiteinspector.OutputFormat;
 import xyz.becvar.websiteinspector.utils.Logger;
-import xyz.becvar.websiteinspector.HelpComponent;
 import xyz.becvar.websiteinspector.core.AnalysisResult;
 import xyz.becvar.websiteinspector.core.AnalysisModule;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
+ * Class Main
+ *
  * This is the main class of the website-inspector application
+ *
+ * @package xyz.becvar.websiteinspector
  */
 public class Main {
 

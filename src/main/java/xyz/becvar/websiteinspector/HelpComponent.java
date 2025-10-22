@@ -1,7 +1,11 @@
 package xyz.becvar.websiteinspector;
 
 /**
+ * Class HelpComponent
+ *
  * This class provides help information
+ *
+ * @package xyz.becvar.websiteinspector
  */
 public class HelpComponent {
 

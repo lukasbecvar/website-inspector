@@ -16,16 +16,19 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
   
+    # setup java
     - name: Setup Java
       uses: actions/setup-java@v3
       with:
         distribution: 'temurin'
         java-version: '21'
 
+    # setup maven 
     - name: Setup Maven
       uses: stCarolas/setup-maven@v4.5
       with:
         maven-version: 3.9.11
 
+    # run static code analysis
     - name: Run verify
       run: mvn clean verify

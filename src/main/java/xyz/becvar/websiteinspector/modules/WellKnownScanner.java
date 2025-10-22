@@ -1,4 +1,3 @@
-
 package xyz.becvar.websiteinspector.modules;
 
 import xyz.becvar.websiteinspector.utils.Logger;
@@ -7,7 +6,11 @@ import xyz.becvar.websiteinspector.core.AnalysisResult;
 import xyz.becvar.websiteinspector.core.AnalysisModule;
 
 /**
- * This class implements well-known analysis module
+ * Class TlsInfo
+ *
+ * This module implements well-known analysis
+ *
+ * @package xyz.becvar.websiteinspector.modules
  */
 public class WellKnownScanner implements AnalysisModule {
 

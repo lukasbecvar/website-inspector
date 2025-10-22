@@ -6,10 +6,14 @@ import xyz.becvar.websiteinspector.utils.SystemUtils;
 import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
 /**
+ * Class Validator
+ *
  * This class contains utility methods for validating URLs
+ *
+ * @package xyz.becvar.websiteinspector
  */
-public class Validator
-{
+public class Validator {
+
     /**
      * Checks if the given URL is available
      * 
@@ -17,16 +21,18 @@ public class Validator
      * 
      * @return True if the URL is available, false otherwise
      */
-    public static boolean checkIsWebsiteAvailable(String url)
-    {
+    public static boolean checkIsWebsiteAvailable(String url) {
+        HttpURLConnection connection = null;
         try {
-            HttpURLConnection connection = HttpClientManager.getConnection(url);
+            connection = HttpClientManager.getConnection(url);
             connection.setRequestMethod("HEAD");
 
             int responseCode = connection.getResponseCode();
             return (responseCode >= 200 && responseCode < 300);
         } catch (IOException e) {
             return false;
+        } finally {
+            if (connection != null) connection.disconnect();
         }
     }
 
@@ -37,8 +43,7 @@ public class Validator
      * 
      * @return The validated URL, or null if the URL is invalid
      */
-    public static String validateUrl(String url)
-    {
+    public static String validateUrl(String url) {
         String httpsUrl;
         String httpUrl;
 

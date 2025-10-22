@@ -13,7 +13,11 @@ import xyz.becvar.websiteinspector.core.AnalysisResult;
 import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
 /**
- * This class detects profilers on a website
+ * Class ProfilerDetector
+ *
+ * This module detects profilers on website
+ *
+ * @package xyz.becvar.websiteinspector.modules
  */
 public class ProfilerDetector implements AnalysisModule {
 
@@ -23,8 +27,8 @@ public class ProfilerDetector implements AnalysisModule {
     }
 
     private static final Map<String, String> PROFILER_PATHS = new HashMap<>();
-    private static final Map<String, String> PROFILER_CONTENT = new HashMap<>();
     private static final Map<String, String> PROFILER_HEADERS = new HashMap<>();
+    private static final Map<String, List<String>> PROFILER_CONTENT = new HashMap<>();
 
     static {
         PROFILER_PATHS.put("Laravel Telescope", "/telescope");
@@ -32,10 +36,11 @@ public class ProfilerDetector implements AnalysisModule {
         PROFILER_PATHS.put("Flask-DebugToolbar", "/__debug__/");
 
         // Nette Tracy profiler
-        PROFILER_CONTENT.put("Nette Tracy", "<!-- Tracy Debug Bar -->");
-        PROFILER_CONTENT.put("Nette Tracy", "_tracy_bar=js");
-        PROFILER_CONTENT.put("Nette Tracy", "tracy-session");
-        PROFILER_HEADERS.put("Nette Tracy", "X-Powered-By: Nette Framework");
+        PROFILER_CONTENT.put("Nette Tracy", List.of(
+                "<!-- Tracy Debug Bar -->",
+                "_tracy_bar=js",
+                "tracy-session"
+        ));
     }
 
     /**
@@ -54,8 +59,9 @@ public class ProfilerDetector implements AnalysisModule {
             String profilerName = entry.getKey();
             String path = entry.getValue();
             String url = targetUrl + path;
+            HttpURLConnection connection = null;
             try {
-                HttpURLConnection connection = HttpClientManager.getConnection(url);
+                connection = HttpClientManager.getConnection(url);
                 connection.setInstanceFollowRedirects(true);
                 connection.setRequestMethod("HEAD");
                 int responseCode = connection.getResponseCode();
@@ -66,6 +72,8 @@ public class ProfilerDetector implements AnalysisModule {
                 }
             } catch (IOException e) {
                 Logger.printWarning("Failed to check for profiler: " + url, e.getMessage());
+            } finally {
+                if (connection != null) connection.disconnect();
             }
         }
 
@@ -98,12 +106,10 @@ public class ProfilerDetector implements AnalysisModule {
         // Check for profilers based on page content
         String html = WebsiteUtils.getHtml(targetUrl);
         if (html != null) {
-            for (Map.Entry<String, String> entry : PROFILER_CONTENT.entrySet()) {
-                String profilerName = entry.getKey();
-                String content = entry.getValue();
-                if (html.contains(content)) {
-                    if (!foundProfilers.contains(profilerName)) {
-                        foundProfilers.add(profilerName);
+            for (Map.Entry<String, List<String>> entry : PROFILER_CONTENT.entrySet()) {
+                for (String content : entry.getValue()) {
+                    if (html.contains(content)) {
+                        foundProfilers.add(entry.getKey());
                     }
                 }
             }
@@ -133,7 +139,6 @@ public class ProfilerDetector implements AnalysisModule {
      */
     public static class ProfilerResult implements AnalysisResult {
         private final List<String> foundProfilers;
-
         public ProfilerResult(List<String> foundProfilers) {
             this.foundProfilers = new ArrayList<>(foundProfilers);
         }

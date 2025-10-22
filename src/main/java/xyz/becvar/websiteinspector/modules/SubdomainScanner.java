@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.security.SecureRandom;
 import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
 import xyz.becvar.websiteinspector.Main;
@@ -18,12 +17,17 @@ import java.util.concurrent.ExecutorService;
 import xyz.becvar.websiteinspector.core.Config;
 import xyz.becvar.websiteinspector.utils.Logger;
 import java.util.concurrent.atomic.AtomicInteger;
+import xyz.becvar.websiteinspector.utils.StringUtils;
 import xyz.becvar.websiteinspector.core.AnalysisModule;
 import xyz.becvar.websiteinspector.core.AnalysisResult;
 import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
 /**
- * This class implements the Subdomain Scan analysis module
+ * Class SubdomainScanner
+ *
+ * This module implements the subdomain scan analysis
+ *
+ * @package xyz.becvar.websiteinspector.modules
  */
 public class SubdomainScanner implements AnalysisModule {
 
@@ -32,10 +36,6 @@ public class SubdomainScanner implements AnalysisModule {
     @Override
     public String getName() {
         return "Subdomain Scan";
-    }
-
-    public SubdomainScanner() {
-        this.subdomainsFilePath = null;
     }
 
     public SubdomainScanner(String subdomainsFilePath) {
@@ -111,17 +111,18 @@ public class SubdomainScanner implements AnalysisModule {
      * @param completed The atomic integer of completed subdomains
      */
     private void checkUrl(String urlString, Set<String> foundSubdomains, int total, AtomicInteger completed) {
+        HttpURLConnection connection = null;
         try {
-            HttpURLConnection connection = HttpClientManager.getConnection(urlString);
+            connection = HttpClientManager.getConnection(urlString);
             connection.setRequestMethod("GET");
             if (connection.getResponseCode() >= 200 && connection.getResponseCode() < 400) {
                 synchronized (foundSubdomains) {
                     foundSubdomains.add(urlString);
                 }
             }
-        } catch (IOException e) {
-            /** ignore */
+        } catch (IOException ignored) {
         } finally {
+            if (connection != null) connection.disconnect();
             int current = completed.incrementAndGet();
             Logger.printProgress("Scanning subdomains: " + current + "/" + total);
         }
@@ -137,12 +138,13 @@ public class SubdomainScanner implements AnalysisModule {
     private boolean detectGlobalHttpRedirect(String baseDomain) {
         Logger.logStatus("Checking for global HTTP -> HTTPS redirect...");
         for (int i = 0; i < 5; i++) {
-            String randomSub = generateRandomString(10);
+            String randomSub = StringUtils.generateRandomString(10);
             String testUrl = "http://" + randomSub + "." + baseDomain;
             String expectedLocation = "https://" + randomSub + "." + baseDomain;
 
+            HttpURLConnection connection = null;
             try {
-                HttpURLConnection connection = HttpClientManager.getConnection(testUrl);
+                connection = HttpClientManager.getConnection(testUrl);
                 connection.setInstanceFollowRedirects(false);
                 connection.setRequestMethod("HEAD");
 
@@ -156,20 +158,12 @@ public class SubdomainScanner implements AnalysisModule {
             } catch (IOException e) {
                 Logger.logStatus("No global redirect detected (request failed).");
                 return false;
+            } finally {
+                if (connection != null) connection.disconnect();
             }
         }
         Logger.logStatus("Global HTTP -> HTTPS redirect detected. Scanning HTTPS only.");
         return true;
-    }
-
-    private String generateRandomString(int length) {
-        final String ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyz0123456789";
-        final SecureRandom random = new SecureRandom();
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            sb.append(ALPHANUMERIC.charAt(random.nextInt(ALPHANUMERIC.length())));
-        }
-        return sb.toString();
     }
 
     /**
@@ -177,7 +171,6 @@ public class SubdomainScanner implements AnalysisModule {
      */
     public static class SubdomainScanResult implements AnalysisResult {
         private final Set<String> foundSubdomains;
-
         public SubdomainScanResult(Set<String> foundSubdomains) {
             this.foundSubdomains = new HashSet<>(foundSubdomains);
         }

@@ -17,7 +17,11 @@ import xyz.becvar.websiteinspector.dto.JsonReport;
 import xyz.becvar.websiteinspector.core.AnalysisResult;
 
 /**
+ * Class Logger
+ *
  * This class handles logging to the console and file
+ *
+ * @package xyz.becvar.websiteinspector.utils
  */
 public class Logger {
 

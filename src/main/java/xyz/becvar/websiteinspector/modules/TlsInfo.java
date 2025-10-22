@@ -1,6 +1,5 @@
 package xyz.becvar.websiteinspector.modules;
 
-import java.net.URL;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Optional;
@@ -16,7 +15,11 @@ import xyz.becvar.websiteinspector.core.AnalysisResult;
 import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
 /**
- * This class implements the TLS/SSL Info analysis module
+ * Class TlsInfo
+ *
+ * This module implements TLS/SSL analysis
+ *
+ * @package xyz.becvar.websiteinspector.modules
  */
 public class TlsInfo implements AnalysisModule {
 
@@ -26,11 +29,11 @@ public class TlsInfo implements AnalysisModule {
     }
 
     /**
-     * Runs the TLS/SSL Info analysis for the given target URL
+     * Runs TLS/SSL Info analysis for the given target URL
      * 
      * @param targetUrl The URL to analyze
      * 
-     * @return An AnalysisResult object containing the findings, or null on critical error
+     * @return Result object containing the findings
      */
     @Override
     public AnalysisResult analyze(String targetUrl) {
@@ -38,8 +41,9 @@ public class TlsInfo implements AnalysisModule {
             return null; // Skip non-HTTPS sites
         }
 
+        HttpsURLConnection conn = null;
         try {
-            HttpsURLConnection conn = (HttpsURLConnection) HttpClientManager.getConnection(targetUrl);
+            conn = (HttpsURLConnection) HttpClientManager.getConnection(targetUrl);
             conn.connect();
 
             Optional<SSLSession> sslSessionOptional = conn.getSSLSession();
@@ -64,6 +68,8 @@ public class TlsInfo implements AnalysisModule {
             Logger.printError("SSL peer not verified: " + e.getMessage());
         } catch (IOException e) {
             Logger.printError("Error fetching TLS/SSL info: " + e.getMessage());
+        } finally {
+            if (conn != null) conn.disconnect();
         }
         return null;
     }

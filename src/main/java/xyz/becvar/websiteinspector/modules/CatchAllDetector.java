@@ -1,43 +1,28 @@
 package xyz.becvar.websiteinspector.modules;
 
-import java.net.URL;
 import java.util.List;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.security.SecureRandom;
 import java.net.HttpURLConnection;
 import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import xyz.becvar.websiteinspector.core.Config;
 import xyz.becvar.websiteinspector.utils.Logger;
+import xyz.becvar.websiteinspector.utils.StringUtils;
 import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
 /**
- * This class contains the logic for detecting catch-alls on a website
+ * Class CatchAllDetector
+ *
+ * This module contains the logic for detecting catch-alls on a website
+ *
+ * @package xyz.becvar.websiteinspector.modules
  */
 public class CatchAllDetector {
 
-    private static final int RANDOM_TEST_COUNT = 10;
-    private static final int RANDOM_STRING_LENGTH = 20;
+    private static final int RANDOM_TEST_COUNT = Config.RANDOM_TEST_COUNT;
     private static final int THREAD_POOL_SIZE = Config.SCANNER_THREAD_POOL_SIZE;
-    private static final String ALPHANUMERIC = "abcdefghijklmnopqrstuvwxyz0123456789";
-    private static final SecureRandom random = new SecureRandom();
-
-    /**
-     * Generates a random string of the given length
-     * 
-     * @param length The length of the string to generate
-     * 
-     * @return The generated string
-     */
-    private static String generateRandomString(int length) {
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            sb.append(ALPHANUMERIC.charAt(random.nextInt(ALPHANUMERIC.length())));
-        }
-        return sb.toString();
-    }
 
     /**
      * Checks the given URL for a catch-all response code
@@ -47,13 +32,16 @@ public class CatchAllDetector {
      * @return The response code of the URL, or -1 if an error occurred
      */
     private static int checkUrl(String urlString) {
+        HttpURLConnection connection = null;
         try {
-            HttpURLConnection connection = HttpClientManager.getConnection(urlString);
+            connection = HttpClientManager.getConnection(urlString);
             connection.setInstanceFollowRedirects(false);
             connection.setRequestMethod("HEAD");
             return connection.getResponseCode();
         } catch (IOException e) {
             return -1;
+        } finally {
+            if (connection != null) connection.disconnect();
         }
     }
 
@@ -100,7 +88,7 @@ public class CatchAllDetector {
         List<Future<Integer>> futures = new ArrayList<>();
 
         for (int i = 0; i < RANDOM_TEST_COUNT; i++) {
-            String randomPath = generateRandomString(RANDOM_STRING_LENGTH);
+            String randomPath = StringUtils.generateRandomString(20);
             String urlPath = baseUrl + "/" + randomPath;
             futures.add(executor.submit(() -> checkUrl(urlPath)));
         }
@@ -133,7 +121,7 @@ public class CatchAllDetector {
         String protocol = baseUrl.startsWith("https://") ? "https://" : "http://";
 
         for (int i = 0; i < RANDOM_TEST_COUNT; i++) {
-            String randomSubdomain = generateRandomString(RANDOM_STRING_LENGTH);
+            String randomSubdomain = StringUtils.generateRandomString(20);
             String urlSubdomain = protocol + randomSubdomain + "." + baseDomain;
             futures.add(executor.submit(() -> checkUrl(urlSubdomain)));
         }

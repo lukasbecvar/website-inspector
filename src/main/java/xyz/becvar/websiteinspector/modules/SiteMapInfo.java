@@ -6,7 +6,11 @@ import xyz.becvar.websiteinspector.core.AnalysisResult;
 import xyz.becvar.websiteinspector.core.AnalysisModule;
 
 /**
- * This class implements the Sitemap & Robots.txt analysis module
+ * Class SiteMapInfo
+ *
+ * This module implements the Sitemap & Robots.txt analysis
+ *
+ * @package xyz.becvar.websiteinspector.modules
  */
 public class SiteMapInfo implements AnalysisModule {
 

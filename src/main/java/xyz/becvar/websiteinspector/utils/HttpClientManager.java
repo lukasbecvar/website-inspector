@@ -6,7 +6,11 @@ import java.net.HttpURLConnection;
 import xyz.becvar.websiteinspector.core.Config;
 
 /**
+ * Class HttpClientManager
+ *
  * This class manages the HttpURLConnection
+ *
+ * @package xyz.becvar.websiteinspector.utils
  */
 public class HttpClientManager {
 

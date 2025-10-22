@@ -1,4 +1,3 @@
-
 package xyz.becvar.websiteinspector.modules;
 
 import java.util.*;
@@ -13,7 +12,11 @@ import xyz.becvar.websiteinspector.core.AnalysisModule;
 import xyz.becvar.websiteinspector.utils.HttpClientManager;
 
 /**
- * This class implements the Server Info analysis module
+ * Class ServerInfo
+ *
+ * This module implements server info analysis
+ *
+ * @package xyz.becvar.websiteinspector.modules
  */
 public class ServerInfo implements AnalysisModule {
 
@@ -31,9 +34,10 @@ public class ServerInfo implements AnalysisModule {
      */
     @Override
     public AnalysisResult analyze(String targetUrl) {
+        HttpURLConnection connection = null;
         try {
             URL urlObject = new URL(targetUrl);
-            HttpURLConnection connection = HttpClientManager.getConnection(targetUrl);
+            connection = HttpClientManager.getConnection(targetUrl);
             connection.setRequestMethod("HEAD");
             connection.connect();
 
@@ -48,6 +52,8 @@ public class ServerInfo implements AnalysisModule {
         } catch (IOException e) {
             Logger.printError("Error fetching server info: " + e.getMessage());
             return null; // Return null or an ErrorResult object
+        } finally {
+            if (connection != null) connection.disconnect();
         }
     }
 
@@ -119,7 +125,11 @@ public class ServerInfo implements AnalysisModule {
             Logger.log("HTTP Header Analysis");
             Logger.printSpacer();
 
-            Logger.printColoredKeyValue("Status", headers.get(null).get(0));
+            if (headers.containsKey(null) && headers.get(null) != null && !headers.get(null).isEmpty()) {
+                Logger.printColoredKeyValue("Status", headers.get(null).get(0));
+            } else {
+                Logger.printColoredKeyValue("Status", "Unknown");
+            }
 
             Set<String> foundHeaders = new HashSet<>();
             headers.keySet().stream().filter(Objects::nonNull).forEach(key -> foundHeaders.add(key.toLowerCase(Locale.ROOT)));
@@ -139,7 +149,12 @@ public class ServerInfo implements AnalysisModule {
             });
 
             if (foundHeaders.contains("x-powered-by")) {
-                Logger.printWarning("X-Powered-By", String.join(", ", headers.get("X-Powered-By")) + " (Reveals technology, recommended to remove)");
+                for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+                    if (entry.getKey() != null && entry.getKey().equalsIgnoreCase("x-powered-by")) {
+                        Logger.printWarning("X-Powered-By", String.join(", ", entry.getValue()) + " (Reveals technology, recommended to remove)");
+                        break;
+                    }
+                }
             }
 
             // Print other non-security headers

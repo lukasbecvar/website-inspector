@@ -1,18 +1,20 @@
 package xyz.becvar.websiteinspector.utils;
 
-import java.net.URL;
 import java.io.IOException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import xyz.becvar.websiteinspector.Main;
 import java.nio.charset.StandardCharsets;
 
 /**
+ * Class WebsiteUtils
+ *
  * This class contains utility methods for working with websites
+ *
+ * @package xyz.becvar.websiteinspector.utils
  */
-public class WebsiteUtils
-{
+public class WebsiteUtils {
+
     /**
      * Gets the HTML content of the given URL
      * 
@@ -20,8 +22,7 @@ public class WebsiteUtils
      * 
      * @return The HTML content of the URL
      */
-    public static String getHtml(String urlString)
-    {
+    public static String getHtml(String urlString) {
         StringBuilder result = new StringBuilder();
         try {
             HttpURLConnection conn = HttpClientManager.getConnection(urlString);
@@ -47,8 +48,7 @@ public class WebsiteUtils
      * 
      * @return The file content of the URL
      */
-    public static String downloadFileContent(String urlString)
-    {
+    public static String downloadFileContent(String urlString) {
         StringBuilder content = new StringBuilder();
         try {
             HttpURLConnection conn = HttpClientManager.getConnection(urlString);
