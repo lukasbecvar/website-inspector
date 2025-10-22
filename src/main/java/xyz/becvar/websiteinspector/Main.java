@@ -136,6 +136,7 @@ public class Main {
             modules.add(new ServerInfo());
             modules.add(new TlsInfo());
             modules.add(new SiteMapInfo());
+            modules.add(new WellKnownScanner());
             modules.add(new AdminPanelDetector());
             modules.add(new ProfilerDetector());
 
@@ -174,6 +175,7 @@ public class Main {
                 printResult(results, ServerInfo.ServerInfoResult.class);
                 printResult(results, TlsInfo.TlsInfoResult.class);
                 printResult(results, SiteMapInfo.SiteMapInfoResult.class);
+                printResult(results, WellKnownScanner.WellKnownScannerResult.class);
                 printResult(results, AdminPanelDetector.AdminPanelResult.class);
                 printResult(results, ProfilerDetector.ProfilerResult.class);
                 printResult(results, DirectoryScanner.DirectoryScanResult.class);
