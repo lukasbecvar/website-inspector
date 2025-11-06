@@ -1,0 +1,44 @@
+name: Build & Attach on release
+
+on:
+  release:
+    types: [published]
+
+# enable github actions token write permissions
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Attach
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # setup java
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      # setup maven 
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.9.11
+
+      # build jar
+      - name: Build with Maven
+        run: mvn clean package
+        
+      # attach jars to release
+      - name: Attach jars to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: | 
+            target/*.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
