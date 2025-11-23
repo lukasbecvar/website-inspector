@@ -15,6 +15,7 @@ public class Config {
 
     // HTTP client configuration
     public static final int CONNECTION_TIMEOUT = 5;
+    public static final int MAX_TOO_MANY_REQUESTS = 100;
     public static final int SCANNER_THREAD_POOL_SIZE = 30;
 
     // Catch all detector configuration

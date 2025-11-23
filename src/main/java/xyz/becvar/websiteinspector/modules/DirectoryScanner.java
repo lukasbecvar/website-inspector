@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import xyz.becvar.websiteinspector.core.Config;
 import xyz.becvar.websiteinspector.utils.Logger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import xyz.becvar.websiteinspector.core.AnalysisModule;
 import xyz.becvar.websiteinspector.core.AnalysisResult;
@@ -29,6 +30,8 @@ import xyz.becvar.websiteinspector.utils.HttpClientManager;
  * @package xyz.becvar.websiteinspector.modules
  */
 public class DirectoryScanner implements AnalysisModule {
+
+    private static final int HTTP_TOO_MANY_REQUESTS = 429;
 
     private String routesFilePath;
 
@@ -66,6 +69,9 @@ public class DirectoryScanner implements AnalysisModule {
         ExecutorService executor = Executors.newFixedThreadPool(Config.SCANNER_THREAD_POOL_SIZE);
         List<Future<?>> futures = new ArrayList<>();
 
+        final AtomicInteger tooManyRequests = new AtomicInteger(0);
+        final AtomicBoolean stopScan = new AtomicBoolean(false);
+
         try (InputStream inputStream = getRoutesInputStream();
             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
@@ -76,10 +82,9 @@ public class DirectoryScanner implements AnalysisModule {
             }
             final int totalRoutes = routes.size();
             final AtomicInteger completedRoutes = new AtomicInteger(0);
-
             for (String r : routes) {
                 String fullUrl = targetUrl + r;
-                futures.add(executor.submit(() -> checkUrl(fullUrl, foundDirectories, totalRoutes, completedRoutes)));
+                futures.add(executor.submit(() -> checkUrl(fullUrl, foundDirectories, totalRoutes, completedRoutes, tooManyRequests, stopScan)));
             }
 
         } catch (IOException e) {
@@ -95,7 +100,7 @@ public class DirectoryScanner implements AnalysisModule {
             }
         }
         Logger.clearProgress();
-        return new DirectoryScanResult(foundDirectories);
+        return new DirectoryScanResult(foundDirectories, stopScan.get(), tooManyRequests.get());
     }
 
     /**
@@ -106,12 +111,25 @@ public class DirectoryScanner implements AnalysisModule {
      * @param total The total number of directories to check
      * @param completed The atomic integer of completed directories
      */
-    private void checkUrl(String urlString, Set<String> foundDirectories, int total, AtomicInteger completed) {
+    private void checkUrl(String urlString, Set<String> foundDirectories, int total, AtomicInteger completed, AtomicInteger tooManyRequests, AtomicBoolean stopScan) {
+        if (stopScan.get()) {
+            int current = completed.incrementAndGet();
+            Logger.printProgress("Scanning directories: " + current + "/" + total);
+            return;
+        }
+
         HttpURLConnection connection = null;
         try {
             connection = HttpClientManager.getConnection(urlString);
             connection.setRequestMethod("GET");
-            if (connection.getResponseCode() >= 200 && connection.getResponseCode() < 400) {
+            int responseCode = connection.getResponseCode();
+
+            if (responseCode == HTTP_TOO_MANY_REQUESTS) {
+                int blockedCount = tooManyRequests.incrementAndGet();
+                if (blockedCount >= Config.MAX_TOO_MANY_REQUESTS) {
+                    stopScan.compareAndSet(false, true);
+                }
+            } else if (responseCode >= 200 && responseCode < 400) {
                 synchronized (foundDirectories) {
                     foundDirectories.add(urlString);
                 }
@@ -130,17 +148,24 @@ public class DirectoryScanner implements AnalysisModule {
      */
     public static class DirectoryScanResult implements AnalysisResult {
         private final Set<String> foundDirectories;
-        public DirectoryScanResult(Set<String> foundDirectories) {
+        private final boolean throttled;
+        private final int throttledCount;
+        public DirectoryScanResult(Set<String> foundDirectories, boolean throttled, int throttledCount) {
             this.foundDirectories = new HashSet<>(foundDirectories);
+            this.throttled = throttled;
+            this.throttledCount = throttledCount;
         }
 
         @Override
         public void print() {
-            if (!foundDirectories.isEmpty()) {
+            if (!foundDirectories.isEmpty() || throttled) {
                 Logger.printSpacer();
                 Logger.log("Found Routes");
                 Logger.printSpacer();
                 foundDirectories.forEach(dir -> Logger.printSuccess("  - Found", dir));
+                if (throttled) {
+                    Logger.printWarning("Directory scan skipped", "HTTP 429 received " + throttledCount + " times.");
+                }
             }
         }
     }
